@@ -1,0 +1,22 @@
+Options -Indexes
+RewriteEngine On
+RewriteBase /pms/
+
+# Serve public assets when the app is uploaded to the hosting root.
+RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
+# Never expose application internals directly.
+RewriteRule ^(app|config|database|storage)(/.*)?$ - [F,L]
+
+# Requests already targeting the public folder (e.g. /public/assets/css/app.css)
+# pass through untouched, so static assets don't depend on the -f file check
+# below (some hosts evaluate REQUEST_FILENAME unreliably for subfolder sites).
+RewriteRule ^public/ - [L]
+
+# Let real files/folders load normally.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Send all clean URLs such as /login, /projects, /reports to the PHP router.
+RewriteRule ^ public/index.php [L]
