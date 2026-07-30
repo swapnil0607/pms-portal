@@ -98,6 +98,7 @@ if ($path === '/') {
         'myLogSummary' => Dashboard::myLogSummary($userId),
         'labels' => Task::statusLabels(),
         'categories' => WorkLog::CATEGORIES,
+        'suggestions' => suggestions_data(true),
     ]);
     exit;
 }

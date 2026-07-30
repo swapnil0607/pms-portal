@@ -1360,6 +1360,45 @@ textarea {
     display: block;
 }
 
+.task-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-row-info strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.task-row-path {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.task-row-path .path-sep {
+    display: inline-block;
+    margin: 0 5px;
+    color: #b6c0cf;
+}
+
+.task-row-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+}
+
+.task-due {
+    color: var(--muted);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.task-due.overdue {
+    color: var(--danger);
+}
+
 .simple-log-form {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

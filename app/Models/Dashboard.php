@@ -39,9 +39,10 @@ class Dashboard
     public static function myTasks(int $userId): array
     {
         $stmt = Database::connection()->prepare(
-            "SELECT t.*, p.name AS project_name
+            "SELECT t.*, p.name AS project_name, tl.name AS task_list_name
              FROM tasks t
              JOIN projects p ON p.id = t.project_id
+             LEFT JOIN task_lists tl ON tl.id = t.task_list_id
              WHERE t.assigned_to = ? AND t.status <> 'completed'
              ORDER BY t.due_date IS NULL, t.due_date, FIELD(t.priority, 'critical','high','medium','low')
              LIMIT 8"
