@@ -437,6 +437,43 @@ textarea {
     width: auto;
 }
 
+.field-label {
+    display: block;
+    color: #3c4c63;
+    font-weight: 700;
+}
+
+.field-hint {
+    margin: 4px 0 12px;
+    font-size: 13px;
+}
+
+.permission-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 16px;
+    padding: 14px 16px;
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.permission-grid .checkbox-inline {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.permission-grid .checkbox-inline.disabled {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.permission-note {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+}
+
 .autosuggest-list {
     position: absolute;
     top: 100%;

@@ -139,6 +139,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.querySelectorAll('[data-role-select]').forEach((select) => {
+        let defaults = {};
+        try {
+            defaults = JSON.parse(select.dataset.roleDefaults || '{}');
+        } catch (e) {
+            defaults = {};
+        }
+
+        const grid = select.closest('form')?.querySelector('.permission-grid');
+        if (!grid) {
+            return;
+        }
+
+        select.addEventListener('change', () => {
+            const pages = defaults[select.value] || [];
+            grid.querySelectorAll('input[type="checkbox"]').forEach((box) => {
+                box.checked = pages.includes(box.value);
+            });
+        });
+    });
+
     document.querySelectorAll('.color-field').forEach((field) => {
         const colorInput = field.querySelector('input[type="color"]');
         const clearCheckbox = field.querySelector('input[type="checkbox"]');

@@ -1,8 +1,5 @@
 <?php
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$role = $_SESSION['user_role'] ?? 'member';
-$isManager = in_array($role, ['admin', 'manager'], true);
-$isAdmin = $role === 'admin';
 $pageTitle = $title ?? 'Dashboard';
 $breadcrumbs = [['label' => 'Home', 'href' => '/']];
 
@@ -41,6 +38,9 @@ if ($currentPath === '/') {
 } elseif (str_starts_with($currentPath, '/users/create')) {
     $breadcrumbs[] = ['label' => 'Users', 'href' => '/users'];
     $breadcrumbs[] = ['label' => 'New User', 'href' => null];
+} elseif (str_starts_with($currentPath, '/users/edit')) {
+    $breadcrumbs[] = ['label' => 'Users', 'href' => '/users'];
+    $breadcrumbs[] = ['label' => 'Edit User', 'href' => null];
 } elseif (str_starts_with($currentPath, '/users')) {
     $breadcrumbs[] = ['label' => 'Users', 'href' => null];
 } elseif (str_starts_with($currentPath, '/settings') || str_starts_with($currentPath, '/templates')) {
@@ -72,18 +72,28 @@ if ($currentPath === '/') {
             </div>
             <nav class="nav">
                 <a class="<?= $currentPath === '/' || str_starts_with($currentPath, '/my-work') ? 'active' : '' ?>" href="/">Home</a>
-                <?php if ($isManager): ?>
+                <?php if (\App\Core\Permissions::canAccessPage('projects')): ?>
                     <a class="<?= str_starts_with($currentPath, '/projects') ? 'active' : '' ?>" href="/projects">Projects</a>
+                <?php endif; ?>
+                <?php if (\App\Core\Permissions::canAccessPage('clients')): ?>
                     <a class="<?= str_starts_with($currentPath, '/clients') ? 'active' : '' ?>" href="/clients">Clients</a>
                 <?php endif; ?>
-                <a class="<?= str_starts_with($currentPath, '/kanban') ? 'active' : '' ?>" href="/kanban">Kanban</a>
-                <a class="<?= str_starts_with($currentPath, '/work-logs') ? 'active' : '' ?>" href="/work-logs">Daily Log</a>
-                <a class="<?= str_starts_with($currentPath, '/time-logs') ? 'active' : '' ?>" href="/time-logs">Time Logs</a>
-                <?php if ($isManager): ?>
+                <?php if (\App\Core\Permissions::canAccessPage('kanban')): ?>
+                    <a class="<?= str_starts_with($currentPath, '/kanban') ? 'active' : '' ?>" href="/kanban">Kanban</a>
+                <?php endif; ?>
+                <?php if (\App\Core\Permissions::canAccessPage('work_logs')): ?>
+                    <a class="<?= str_starts_with($currentPath, '/work-logs') ? 'active' : '' ?>" href="/work-logs">Daily Log</a>
+                <?php endif; ?>
+                <?php if (\App\Core\Permissions::canAccessPage('time_logs')): ?>
+                    <a class="<?= str_starts_with($currentPath, '/time-logs') ? 'active' : '' ?>" href="/time-logs">Time Logs</a>
+                <?php endif; ?>
+                <?php if (\App\Core\Permissions::canAccessPage('reports')): ?>
                     <a class="<?= str_starts_with($currentPath, '/reports') ? 'active' : '' ?>" href="/reports">Reports</a>
                 <?php endif; ?>
-                <?php if ($isAdmin): ?>
+                <?php if (\App\Core\Permissions::canAccessPage('users') || \App\Core\Permissions::isManager()): ?>
                     <a class="<?= str_starts_with($currentPath, '/users') ? 'active' : '' ?>" href="/users">Users</a>
+                <?php endif; ?>
+                <?php if (\App\Core\Permissions::canAccessPage('settings')): ?>
                     <a class="<?= str_starts_with($currentPath, '/settings') || str_starts_with($currentPath, '/templates') ? 'active' : '' ?>" href="/settings">Settings</a>
                 <?php endif; ?>
             </nav>

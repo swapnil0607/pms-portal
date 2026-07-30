@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(160) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('admin','manager','member','viewer') NOT NULL DEFAULT 'member',
+  permissions TEXT NULL,
   designation VARCHAR(120) NULL,
   department VARCHAR(120) NULL,
   status ENUM('active','inactive') NOT NULL DEFAULT 'active',

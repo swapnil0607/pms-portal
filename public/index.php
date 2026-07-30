@@ -108,6 +108,7 @@ if ($path === '/my-work') {
 }
 
 if ($path === '/projects') {
+    Permissions::requirePage('projects');
     $projects = Project::all();
     View::render('projects/index', [
         'title' => 'Projects',
@@ -121,7 +122,7 @@ if ($path === '/projects') {
 
 if ($path === '/projects/quick-update' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $field = (string) ($_POST['field'] ?? '');
     $value = $_POST['value'] ?? '';
@@ -140,6 +141,7 @@ if ($path === '/projects/quick-update' && is_post()) {
 }
 
 if ($path === '/kanban') {
+    Permissions::requirePage('kanban');
     $projectId = ($_GET['project_id'] ?? '') !== '' ? (int) $_GET['project_id'] : null;
     $assigneeId = ($_GET['assignee_id'] ?? '') !== '' ? (int) $_GET['assignee_id'] : null;
 
@@ -157,6 +159,7 @@ if ($path === '/kanban') {
 }
 
 if ($path === '/time-logs') {
+    Permissions::requirePage('time_logs');
     [$fromDate, $toDate, $dates] = WorkLog::dateRange($_GET['from_date'] ?? null, $_GET['to_date'] ?? null);
     $view = ($_GET['view'] ?? 'user') === 'client' ? 'client' : 'user';
     $rows = $view === 'client'
@@ -176,6 +179,7 @@ if ($path === '/time-logs') {
 }
 
 if ($path === '/work-logs') {
+    Permissions::requirePage('work_logs');
     View::render('work_logs/index', [
         'title' => 'Daily Log',
         'categories' => WorkLog::CATEGORIES,
@@ -308,7 +312,7 @@ if ($path === '/work-logs/delete' && is_post()) {
 }
 
 if ($path === '/clients') {
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('clients');
     View::render('clients/index', [
         'title' => 'Clients',
         'clients' => Client::all(),
@@ -317,7 +321,7 @@ if ($path === '/clients') {
 }
 
 if ($path === '/clients/create') {
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('clients');
     $error = null;
 
     if (is_post()) {
@@ -341,7 +345,7 @@ if ($path === '/clients/create') {
 }
 
 if ($path === '/clients/edit') {
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('clients');
     $clientId = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
     $client = Client::find($clientId);
     if (!$client) {
@@ -371,7 +375,7 @@ if ($path === '/clients/edit') {
 }
 
 if ($path === '/projects/create') {
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $users = User::allActive();
     $clients = Client::allActive();
     $customFields = CustomField::all();
@@ -423,7 +427,7 @@ if ($path === '/projects/create') {
 }
 
 if ($path === '/projects/edit') {
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
     $project = Project::find($projectId);
     if (!$project) {
@@ -483,6 +487,7 @@ if ($path === '/projects/edit') {
 }
 
 if ($path === '/projects/show') {
+    Permissions::requirePage('projects');
     $projectId = (int) ($_GET['id'] ?? 0);
     $project = Project::find($projectId);
     if (!$project) {
@@ -533,7 +538,7 @@ if ($path === '/projects/show') {
 
 if ($path === '/projects/task-list-templates/apply' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $phaseId = ($_POST['phase_id'] ?? '') !== '' ? (int) $_POST['phase_id'] : null;
     $templateId = (int) ($_POST['template_id'] ?? 0);
@@ -547,7 +552,7 @@ if ($path === '/projects/task-list-templates/apply' && is_post()) {
 
 if ($path === '/projects/phases/create' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $name = trim($_POST['name'] ?? '');
 
@@ -560,7 +565,7 @@ if ($path === '/projects/phases/create' && is_post()) {
 
 if ($path === '/projects/task-lists/create' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $phaseId = ($_POST['phase_id'] ?? '') !== '' ? (int) $_POST['phase_id'] : null;
     $name = trim($_POST['name'] ?? '');
@@ -574,7 +579,7 @@ if ($path === '/projects/task-lists/create' && is_post()) {
 
 if ($path === '/projects/phases/delete' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $phaseId = (int) ($_POST['phase_id'] ?? 0);
 
@@ -587,7 +592,7 @@ if ($path === '/projects/phases/delete' && is_post()) {
 
 if ($path === '/projects/phases/update-name' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $phaseId = (int) ($_POST['phase_id'] ?? 0);
     $name = trim($_POST['name'] ?? '');
@@ -603,7 +608,7 @@ if ($path === '/projects/phases/update-name' && is_post()) {
 
 if ($path === '/projects/phases/move' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $phaseId = (int) ($_POST['phase_id'] ?? 0);
     $beforePhaseId = ($_POST['before_phase_id'] ?? '') !== '' ? (int) $_POST['before_phase_id'] : null;
@@ -623,7 +628,7 @@ if ($path === '/projects/phases/move' && is_post()) {
 
 if ($path === '/projects/task-lists/delete' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $taskListId = (int) ($_POST['task_list_id'] ?? 0);
 
@@ -636,7 +641,7 @@ if ($path === '/projects/task-lists/delete' && is_post()) {
 
 if ($path === '/projects/task-lists/update-name' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $taskListId = (int) ($_POST['task_list_id'] ?? 0);
     $name = trim($_POST['name'] ?? '');
@@ -652,7 +657,7 @@ if ($path === '/projects/task-lists/update-name' && is_post()) {
 
 if ($path === '/projects/task-lists/move' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $taskListId = (int) ($_POST['task_list_id'] ?? 0);
     $phaseId = ($_POST['phase_id'] ?? '') !== '' ? (int) $_POST['phase_id'] : null;
@@ -673,7 +678,7 @@ if ($path === '/projects/task-lists/move' && is_post()) {
 
 if ($path === '/projects/members' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $userId = (int) ($_POST['user_id'] ?? 0);
     $role = $_POST['project_role'] ?? 'member';
@@ -687,7 +692,7 @@ if ($path === '/projects/members' && is_post()) {
 
 if ($path === '/projects/members/remove' && is_post()) {
     verify_csrf();
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('projects');
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $userId = (int) ($_POST['user_id'] ?? 0);
 
@@ -699,7 +704,13 @@ if ($path === '/projects/members/remove' && is_post()) {
 }
 
 if ($path === '/users') {
-    Permissions::require(['admin']);
+    // Managers can always reach the list to use their edit-access right,
+    // even if the admin-only "Users" page checkbox isn't ticked for them.
+    if (!Permissions::canAccessPage('users') && !Permissions::isManager()) {
+        http_response_code(403);
+        View::render('403', ['title' => 'Access Denied']);
+        exit;
+    }
     View::render('users/index', [
         'title' => 'Users',
         'users' => User::all(),
@@ -708,7 +719,7 @@ if ($path === '/users') {
 }
 
 if ($path === '/settings') {
-    Permissions::require(['admin']);
+    Permissions::requirePage('settings');
     $activeTab = in_array($_GET['tab'] ?? '', ['fields', 'templates'], true) ? $_GET['tab'] : 'fields';
     View::render('settings', [
         'title' => 'Settings',
@@ -722,7 +733,7 @@ if ($path === '/settings') {
 
 if ($path === '/settings/project-fields' && is_post()) {
     verify_csrf();
-    Permissions::require(['admin']);
+    Permissions::requirePage('settings');
     ProjectFieldSetting::save($_POST['labels'] ?? [], $_POST['visible'] ?? []);
     $_SESSION['flash_success'] = 'Project dashboard fields updated.';
     redirect('/settings?tab=fields');
@@ -731,7 +742,7 @@ if ($path === '/settings/project-fields' && is_post()) {
 
 if ($path === '/settings/custom-fields/create' && is_post()) {
     verify_csrf();
-    Permissions::require(['admin']);
+    Permissions::requirePage('settings');
     $label = trim($_POST['label'] ?? '');
 
     if ($label === '') {
@@ -746,7 +757,7 @@ if ($path === '/settings/custom-fields/create' && is_post()) {
 
 if ($path === '/settings/custom-fields/update' && is_post()) {
     verify_csrf();
-    Permissions::require(['admin']);
+    Permissions::requirePage('settings');
     $fieldId = (int) ($_POST['field_id'] ?? 0);
     $label = trim($_POST['label'] ?? '');
 
@@ -762,7 +773,7 @@ if ($path === '/settings/custom-fields/update' && is_post()) {
 
 if ($path === '/settings/custom-fields/delete' && is_post()) {
     verify_csrf();
-    Permissions::require(['admin']);
+    Permissions::requirePage('settings');
     $fieldId = (int) ($_POST['field_id'] ?? 0);
     if ($fieldId) {
         CustomField::delete($fieldId);
@@ -774,7 +785,7 @@ if ($path === '/settings/custom-fields/delete' && is_post()) {
 
 if ($path === '/settings/templates/create' && is_post()) {
     verify_csrf();
-    Permissions::require(['admin']);
+    Permissions::requirePage('settings');
     $name = trim($_POST['name'] ?? '');
     $taskLines = preg_split('/\r\n|\r|\n/', trim($_POST['tasks'] ?? '')) ?: [];
 
@@ -794,7 +805,7 @@ if ($path === '/settings/templates/create' && is_post()) {
 
 if ($path === '/settings/templates/update' && is_post()) {
     verify_csrf();
-    Permissions::require(['admin']);
+    Permissions::requirePage('settings');
     $templateId = (int) ($_POST['template_id'] ?? 0);
     $name = trim($_POST['name'] ?? '');
     $taskLines = preg_split('/\r\n|\r|\n/', trim($_POST['tasks'] ?? '')) ?: [];
@@ -814,7 +825,7 @@ if ($path === '/settings/templates/update' && is_post()) {
 
 if ($path === '/settings/templates/delete' && is_post()) {
     verify_csrf();
-    Permissions::require(['admin']);
+    Permissions::requirePage('settings');
     $templateId = (int) ($_POST['template_id'] ?? 0);
     if ($templateId) {
         TaskListTemplate::delete($templateId);
@@ -829,8 +840,18 @@ if ($path === '/templates') {
     exit;
 }
 
+function pages_from_post(): array
+{
+    $submitted = $_POST['pages'] ?? [];
+    if (!is_array($submitted)) {
+        return [];
+    }
+
+    return array_values(array_intersect($submitted, array_keys(Permissions::PAGES)));
+}
+
 if ($path === '/users/create') {
-    Permissions::require(['admin']);
+    Permissions::requirePage('users');
     $error = null;
 
     if (is_post()) {
@@ -849,6 +870,7 @@ if ($path === '/users/create') {
                 'email' => $email,
                 'password_hash' => password_hash($password, PASSWORD_DEFAULT),
                 'role' => $_POST['role'] ?? 'member',
+                'permissions' => json_encode(pages_from_post()),
                 'designation' => trim($_POST['designation'] ?? '') ?: null,
                 'department' => trim($_POST['department'] ?? '') ?: null,
                 'status' => $_POST['status'] ?? 'active',
@@ -859,6 +881,69 @@ if ($path === '/users/create') {
     }
 
     View::render('users/create', ['title' => 'New User', 'error' => $error]);
+    exit;
+}
+
+if ($path === '/users/edit') {
+    Permissions::require(['admin', 'manager']);
+    $userId = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
+    $editUser = $userId ? User::find($userId) : null;
+    if (!$editUser) {
+        http_response_code(404);
+        exit('User not found.');
+    }
+
+    $isAdminEditor = Permissions::isAdmin();
+    if (!$isAdminEditor && $editUser['role'] === 'admin') {
+        http_response_code(403);
+        View::render('403', ['title' => 'Access Denied']);
+        exit;
+    }
+
+    $error = null;
+    if (is_post()) {
+        verify_csrf();
+
+        if ($isAdminEditor) {
+            $name = trim($_POST['name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $existing = $email !== '' ? User::findByEmail($email) : null;
+
+            if ($name === '' || $email === '') {
+                $error = 'Name and email are required.';
+            } elseif ($existing && (int) $existing['id'] !== $userId) {
+                $error = 'A user with this email already exists.';
+            } else {
+                $password = $_POST['password'] ?? '';
+                User::update($userId, [
+                    'name' => $name,
+                    'email' => $email,
+                    'password_hash' => $password !== '' ? password_hash($password, PASSWORD_DEFAULT) : null,
+                    'role' => $_POST['role'] ?? $editUser['role'],
+                    'permissions' => json_encode(pages_from_post()),
+                    'designation' => trim($_POST['designation'] ?? '') ?: null,
+                    'department' => trim($_POST['department'] ?? '') ?: null,
+                    'status' => $_POST['status'] ?? $editUser['status'],
+                ]);
+                redirect('/users');
+            }
+        } else {
+            // Manager: access + status only. Users/Settings aren't offered
+            // in the form for this path, so pages_from_post() can't return
+            // them even if someone forged the request.
+            $allowedPages = array_diff(pages_from_post(), ['users', 'settings']);
+            $status = ($_POST['status'] ?? '') === 'inactive' ? 'inactive' : 'active';
+            User::updateAccess($userId, $allowedPages, $status);
+            redirect('/users');
+        }
+    }
+
+    View::render('users/edit', [
+        'title' => 'Edit User',
+        'editUser' => $editUser,
+        'isAdminEditor' => $isAdminEditor,
+        'error' => $error,
+    ]);
     exit;
 }
 
@@ -1169,7 +1254,7 @@ if ($path === '/attachments/download') {
 }
 
 if ($path === '/reports') {
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('reports');
     $reportType = $_GET['type'] ?? 'detailed';
     $filters = [
         'from_date' => $_GET['from_date'] ?? '',
@@ -1192,7 +1277,7 @@ if ($path === '/reports') {
 }
 
 if ($path === '/reports/export') {
-    Permissions::require(Permissions::MANAGER_ROLES);
+    Permissions::requirePage('reports');
     $filters = [
         'from_date' => $_GET['from_date'] ?? '',
         'to_date' => $_GET['to_date'] ?? '',

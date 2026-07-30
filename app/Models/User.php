@@ -3,14 +3,22 @@
 namespace App\Models;
 
 use App\Core\Database;
+use App\Core\Permissions;
 
 class User
 {
     public static function all(): array
     {
         return Database::connection()
-            ->query('SELECT id, name, email, role, designation, department, status, created_at FROM users ORDER BY name')
+            ->query('SELECT id, name, email, role, permissions, designation, department, status, created_at FROM users ORDER BY name')
             ->fetchAll();
+    }
+
+    /** The page keys this user can access: their own saved set, or their role's default if never explicitly set. */
+    public static function permissionsFor(array $user): array
+    {
+        $decoded = json_decode((string) ($user['permissions'] ?? ''), true);
+        return is_array($decoded) ? $decoded : Permissions::defaultPagesForRole($user['role'] ?? 'member');
     }
 
     public static function allActive(): array
@@ -37,10 +45,40 @@ class User
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (name, email, password_hash, role, designation, department, status)
-             VALUES (:name, :email, :password_hash, :role, :designation, :department, :status)'
+            'INSERT INTO users (name, email, password_hash, role, permissions, designation, department, status)
+             VALUES (:name, :email, :password_hash, :role, :permissions, :designation, :department, :status)'
         );
         $stmt->execute($data);
         return (int) Database::connection()->lastInsertId();
+    }
+
+    /** Full field update — Admin-only path (see updateAccess() for the Manager-restricted one). */
+    public static function update(int $id, array $data): void
+    {
+        $sql = 'UPDATE users
+                SET name = :name,
+                    email = :email,
+                    role = :role,
+                    permissions = :permissions,
+                    designation = :designation,
+                    department = :department,
+                    status = :status';
+        if (!empty($data['password_hash'])) {
+            $sql .= ', password_hash = :password_hash';
+        } else {
+            unset($data['password_hash']);
+        }
+        $sql .= ' WHERE id = :id';
+
+        $data['id'] = $id;
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($data);
+    }
+
+    /** Manager-restricted update: page access + active/inactive status only. */
+    public static function updateAccess(int $id, array $pages, string $status): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE users SET permissions = ?, status = ? WHERE id = ?');
+        $stmt->execute([json_encode(array_values($pages)), $status, $id]);
     }
 }

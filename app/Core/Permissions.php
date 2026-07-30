@@ -12,6 +12,45 @@ class Permissions
 {
     public const MANAGER_ROLES = ['admin', 'manager'];
 
+    /** The 8 top-level sections a user's Page Access checkboxes can grant/revoke. */
+    public const PAGES = [
+        'projects' => 'Projects',
+        'clients' => 'Clients',
+        'kanban' => 'Kanban',
+        'work_logs' => 'Daily Log',
+        'time_logs' => 'Time Logs',
+        'reports' => 'Reports',
+        'users' => 'Users',
+        'settings' => 'Settings',
+    ];
+
+    /** Starting point offered when creating a user, and the fallback for any user without an explicit permissions row. */
+    public static function defaultPagesForRole(string $role): array
+    {
+        return match ($role) {
+            'admin' => array_keys(self::PAGES),
+            'manager' => ['projects', 'clients', 'kanban', 'work_logs', 'time_logs', 'reports'],
+            default => ['kanban', 'work_logs', 'time_logs'],
+        };
+    }
+
+    public static function pages(): array
+    {
+        return $_SESSION['user_pages'] ?? [];
+    }
+
+    public static function canAccessPage(string $page): bool
+    {
+        return in_array($page, self::pages(), true);
+    }
+
+    public static function requirePage(string $page): void
+    {
+        if (!self::canAccessPage($page)) {
+            self::deny();
+        }
+    }
+
     public static function role(): string
     {
         return $_SESSION['user_role'] ?? 'member';
