@@ -489,25 +489,32 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             clearDropTarget();
 
-            if (!draggedCard) {
+            // Capture the card now: the browser fires 'dragend' right after
+            // 'drop' regardless of how long this async handler takes, and
+            // that resets the shared draggedCard to null while we're still
+            // awaiting the request below. Without this local copy, the DOM
+            // update after the await silently fails (the server-side status
+            // change still lands, so a refresh shows it — just not live).
+            const card = draggedCard;
+            if (!card) {
                 return;
             }
 
-            const sourceColumn = draggedCard.closest('.kanban-column');
+            const sourceColumn = card.closest('.kanban-column');
             const status = column.dataset.status || '';
             if (!sourceColumn || sourceColumn === column) {
                 return;
             }
 
             await postMove('/tasks/status', {
-                task_id: draggedCard.dataset.taskId,
-                project_id: draggedCard.dataset.kanbanProjectId,
+                task_id: card.dataset.taskId,
+                project_id: card.dataset.kanbanProjectId,
                 status,
             });
 
             const stack = column.querySelector('.kanban-stack');
-            stack.insertBefore(draggedCard, stack.querySelector('.kanban-empty'));
-            const statusSelect = draggedCard.querySelector('.kanban-move select[name="status"]');
+            stack.insertBefore(card, stack.querySelector('.kanban-empty'));
+            const statusSelect = card.querySelector('.kanban-move select[name="status"]');
             if (statusSelect) {
                 statusSelect.value = status;
             }
