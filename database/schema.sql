@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS projects (
   code VARCHAR(40) NULL UNIQUE,
   client_id INT UNSIGNED NULL,
   project_group VARCHAR(180) NULL,
+  color VARCHAR(7) NULL,
   description TEXT NULL,
   owner_id INT UNSIGNED NOT NULL,
   status ENUM('planned','active','on_hold','completed','cancelled') NOT NULL DEFAULT 'planned',

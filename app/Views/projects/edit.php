@@ -6,6 +6,7 @@
     <a class="btn ghost" href="/projects/show?id=<?= e((string) $project['id']) ?>&tab=details">Back</a>
 </section>
 
+<?php require __DIR__ . '/../partials/suggestions.php'; ?>
 <form method="post" class="panel form-grid">
     <?= csrf_field() ?>
     <input type="hidden" name="id" value="<?= e((string) $project['id']) ?>">
@@ -30,7 +31,14 @@
     </label>
     <label>
         Project Group (freeform, used only when no client is picked)
-        <input type="text" name="project_group" value="<?= e($project['project_group'] ?? '') ?>">
+        <input type="text" name="project_group" value="<?= e($project['project_group'] ?? '') ?>" list="suggest-clients" autocomplete="off">
+    </label>
+    <label>
+        Title Color (used to tint the project title on the Projects page)
+        <span class="color-field">
+            <input type="color" name="color" value="<?= e($project['color'] ?? '#1f6f8b') ?>" <?= empty($project['color']) ? 'disabled' : '' ?>>
+            <label class="checkbox-inline"><input type="checkbox" name="color_clear" value="1" <?= empty($project['color']) ? 'checked' : '' ?>> No custom color</label>
+        </span>
     </label>
     <label>
         Owner

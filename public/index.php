@@ -10,11 +10,21 @@ use App\Models\CustomField;
 use App\Models\Dashboard;
 use App\Models\Project;
 use App\Models\ProjectFieldSetting;
+use App\Models\Suggestions;
 use App\Models\Task;
 use App\Models\TaskListTemplate;
 use App\Models\TimesheetXlsxExporter;
 use App\Models\User;
 use App\Models\WorkLog;
+
+function suggestions_data(): array
+{
+    return [
+        'clients' => Suggestions::clients(),
+        'phases' => Suggestions::phases(),
+        'taskLists' => Suggestions::taskLists(),
+    ];
+}
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $basePath = app_base_path();
@@ -159,6 +169,7 @@ if ($path === '/time-logs') {
         'toDate' => $toDate,
         'dates' => $dates,
         'rows' => $rows,
+        'breakdown' => WorkLog::breakdown($view, $fromDate, $toDate),
     ]);
     exit;
 }
@@ -168,6 +179,7 @@ if ($path === '/work-logs') {
         'title' => 'Daily Log',
         'categories' => WorkLog::CATEGORIES,
         'recentLogs' => WorkLog::recentForUser((int) $_SESSION['user_id']),
+        'suggestions' => suggestions_data(),
     ]);
     exit;
 }
@@ -209,6 +221,16 @@ if ($path === '/work-logs/create' && is_post()) {
     }
 
     redirect(($_POST['return_to'] ?? '') === 'home' ? '/' : '/work-logs');
+}
+
+function project_color_from_post(): ?string
+{
+    if (!empty($_POST['color_clear'])) {
+        return null;
+    }
+
+    $color = trim($_POST['color'] ?? '');
+    return preg_match('/^#[0-9a-fA-F]{6}$/', $color) ? strtolower($color) : null;
 }
 
 function work_log_return_url(string $returnTo, ?int $taskId): string
@@ -263,6 +285,7 @@ if ($path === '/work-logs/edit') {
         'categories' => WorkLog::CATEGORIES,
         'returnTo' => $returnTo,
         'error' => $error,
+        'suggestions' => suggestions_data(),
     ]);
     exit;
 }
@@ -365,6 +388,7 @@ if ($path === '/projects/create') {
                 'code' => trim($_POST['code'] ?? '') ?: null,
                 'client_id' => ($_POST['client_id'] ?? '') !== '' ? (int) $_POST['client_id'] : null,
                 'project_group' => trim($_POST['project_group'] ?? '') ?: null,
+                'color' => project_color_from_post(),
                 'description' => trim($_POST['description'] ?? '') ?: null,
                 'owner_id' => (int) ($_POST['owner_id'] ?? $_SESSION['user_id']),
                 'status' => $_POST['status'] ?? 'planned',
@@ -392,6 +416,7 @@ if ($path === '/projects/create') {
         'customFields' => $customFields,
         'customValues' => [],
         'error' => $error,
+        'suggestions' => suggestions_data(),
     ]);
     exit;
 }
@@ -422,6 +447,7 @@ if ($path === '/projects/edit') {
                 'code' => trim($_POST['code'] ?? '') ?: null,
                 'client_id' => ($_POST['client_id'] ?? '') !== '' ? (int) $_POST['client_id'] : null,
                 'project_group' => trim($_POST['project_group'] ?? '') ?: null,
+                'color' => project_color_from_post(),
                 'description' => trim($_POST['description'] ?? '') ?: null,
                 'owner_id' => (int) ($_POST['owner_id'] ?? $_SESSION['user_id']),
                 'status' => $_POST['status'] ?? 'planned',
@@ -450,6 +476,7 @@ if ($path === '/projects/edit') {
         'customFields' => $customFields,
         'customValues' => CustomField::valuesForProject($projectId),
         'error' => $error,
+        'suggestions' => suggestions_data(),
     ]);
     exit;
 }
@@ -1037,6 +1064,12 @@ if ($path === '/tasks/status' && is_post()) {
         Task::updateStatus($taskId, $status, max(0, min(100, $progress)));
     }
 
+    if (($_POST['ajax'] ?? '') === '1') {
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
     if (($_POST['return_to'] ?? '') === 'kanban') {
         $query = [];
         if (($_POST['filter_project_id'] ?? '') !== '') {
@@ -1152,6 +1185,7 @@ if ($path === '/reports') {
         'customerSummary' => WorkLog::summaryByCustomer($filters),
         'users' => User::allActive(),
         'filters' => $filters,
+        'suggestions' => suggestions_data(),
     ]);
     exit;
 }

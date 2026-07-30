@@ -29,6 +29,7 @@
     <a class="<?= $reportType === 'customer' ? 'active' : '' ?>" href="/reports?type=customer">Customer Report</a>
 </nav>
 
+<?php require __DIR__ . '/../partials/suggestions.php'; ?>
 <form method="get" action="/reports" class="panel filter-bar report-filter">
     <input type="hidden" name="type" value="<?= e($reportType) ?>">
     <label>
@@ -41,7 +42,7 @@
     </label>
     <label>
         Client Name
-        <input type="text" name="project_group" value="<?= e($filters['project_group'] ?? '') ?>" placeholder="Search client">
+        <input type="text" name="project_group" value="<?= e($filters['project_group'] ?? '') ?>" placeholder="Search client" list="suggest-clients" autocomplete="off">
     </label>
     <label>
         User

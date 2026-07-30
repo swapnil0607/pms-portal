@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS clients (
 INSERT INTO clients (name)
 SELECT DISTINCT project_group FROM projects
 WHERE project_group IS NOT NULL AND project_group <> ''
-ON DUPLICATE KEY UPDATE name = name;
+ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 SET @col_exists := (
   SELECT COUNT(*) FROM information_schema.COLUMNS

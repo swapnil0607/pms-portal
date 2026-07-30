@@ -71,9 +71,9 @@ class Project
         $data = self::resolveClientGroup($data);
         $stmt = Database::connection()->prepare(
             'INSERT INTO projects
-                (name, code, client_id, project_group, description, owner_id, status, priority, billed_learners, learners_on_platform, learners_connected, started_with_courses, total_time, average_time_per_learner, adoption_percent, start_date, due_date)
+                (name, code, client_id, project_group, color, description, owner_id, status, priority, billed_learners, learners_on_platform, learners_connected, started_with_courses, total_time, average_time_per_learner, adoption_percent, start_date, due_date)
              VALUES
-                (:name, :code, :client_id, :project_group, :description, :owner_id, :status, :priority, :billed_learners, :learners_on_platform, :learners_connected, :started_with_courses, :total_time, :average_time_per_learner, :adoption_percent, :start_date, :due_date)'
+                (:name, :code, :client_id, :project_group, :color, :description, :owner_id, :status, :priority, :billed_learners, :learners_on_platform, :learners_connected, :started_with_courses, :total_time, :average_time_per_learner, :adoption_percent, :start_date, :due_date)'
         );
         $stmt->execute($data);
         $projectId = (int) Database::connection()->lastInsertId();
@@ -90,6 +90,7 @@ class Project
                  code = :code,
                  client_id = :client_id,
                  project_group = :project_group,
+                 color = :color,
                  description = :description,
                  owner_id = :owner_id,
                  status = :status,

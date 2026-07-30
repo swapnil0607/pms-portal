@@ -56,7 +56,7 @@ $numericDateFields = [
                             <?php if ($field['key'] === 'code'): ?>
                                 <td><?= e($project['code'] ?: 'P-' . $project['id']) ?></td>
                             <?php elseif ($field['key'] === 'name'): ?>
-                                <td><a class="table-link" href="/projects/show?id=<?= e((string) $project['id']) ?>"><?= e($project['name']) ?></a></td>
+                                <td><a class="table-link" href="/projects/show?id=<?= e((string) $project['id']) ?>" <?= !empty($project['color']) ? 'style="color: ' . e($project['color']) . '"' : '' ?>><?= e($project['name']) ?></a></td>
                             <?php elseif ($field['key'] === 'status'): ?>
                                 <td><span class="status-pill <?= e($project['status']) ?>"><?= e(str_replace('_', ' ', $project['status'])) ?></span></td>
                             <?php elseif ($field['key'] === 'tasks'): ?>

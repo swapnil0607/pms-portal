@@ -12,19 +12,20 @@
     <p>Your role can view logs but not add new ones.</p>
 </div>
 <?php else: ?>
+<?php require __DIR__ . '/../partials/suggestions.php'; ?>
 <form method="post" action="/work-logs/create" class="panel simple-log-form">
     <?= csrf_field() ?>
     <label>
         Client Name
-        <input type="text" name="project_group" placeholder="Example: ABC School" required>
+        <input type="text" name="project_group" placeholder="Example: ABC School" list="suggest-clients" autocomplete="off" required>
     </label>
     <label>
         Project Phase
-        <input type="text" name="phase" placeholder="Example: Implementation Phase 1" required>
+        <input type="text" name="phase" placeholder="Example: Implementation Phase 1" list="suggest-phases" autocomplete="off" required>
     </label>
     <label class="span-2">
         Module Number & Name
-        <input type="text" name="module_name" placeholder="Example: M01 - Student Admission" required>
+        <input type="text" name="module_name" placeholder="Example: M01 - Student Admission" list="suggest-task-lists" autocomplete="off" required>
     </label>
     <label>
         Task Category

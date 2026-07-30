@@ -6,6 +6,7 @@
     <a class="btn ghost" href="/projects">Back</a>
 </section>
 
+<?php require __DIR__ . '/../partials/suggestions.php'; ?>
 <form method="post" class="panel form-grid">
     <?= csrf_field() ?>
     <label class="span-2">
@@ -27,7 +28,14 @@
     </label>
     <label>
         Project Group (freeform, used only when no client is picked)
-        <input type="text" name="project_group" placeholder="Client or group name">
+        <input type="text" name="project_group" placeholder="Client or group name" list="suggest-clients" autocomplete="off">
+    </label>
+    <label>
+        Title Color (used to tint the project title on the Projects page)
+        <span class="color-field">
+            <input type="color" name="color" value="#1f6f8b" disabled>
+            <label class="checkbox-inline"><input type="checkbox" name="color_clear" value="1" checked> No custom color</label>
+        </span>
     </label>
     <label>
         Owner

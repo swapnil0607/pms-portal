@@ -35,21 +35,19 @@
     </div>
 </form>
 
-<section class="kanban-board">
+<section class="kanban-board" data-kanban-board>
     <?php foreach ($statuses as $status): ?>
         <div class="kanban-column">
             <header>
                 <h3><?= e($labels[$status]) ?></h3>
-                <span><?= e((string) count($columns[$status])) ?></span>
+                <span data-column-count><?= e((string) count($columns[$status])) ?></span>
             </header>
 
-            <div class="kanban-stack">
-                <?php if (!$columns[$status]): ?>
-                    <p class="kanban-empty">No tasks</p>
-                <?php endif; ?>
+            <div class="kanban-stack" data-status="<?= e($status) ?>">
+                <p class="kanban-empty" <?= $columns[$status] ? 'hidden' : '' ?>>No tasks</p>
 
                 <?php foreach ($columns[$status] as $task): ?>
-                    <article class="kanban-card">
+                    <article class="kanban-card" <?= \App\Core\Permissions::isViewer() ? '' : 'draggable="true"' ?> data-task-id="<?= e((string) $task['id']) ?>" data-kanban-project-id="<?= e((string) $task['project_id']) ?>">
                         <div class="card-top">
                             <span class="priority <?= e($task['priority']) ?>"><?= e($task['priority']) ?></span>
                             <small><?= e($task['due_date'] ?: 'No due date') ?></small>

@@ -184,6 +184,52 @@ class WorkLog
         return self::matrix($stmt->fetchAll(), $fromDate, $toDate);
     }
 
+    /**
+     * Per-row drill-down for the Time Logs dashboard: for 'user' rows, nests
+     * Client -> Task List -> Task; for 'client' rows the client level is
+     * redundant (it IS the row) so nesting starts at Task List -> Task.
+     */
+    public static function breakdown(string $view, string $fromDate, string $toDate): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT wl.project_group, wl.module_name, COALESCE(t.title, wl.task_category) AS task_label, wl.hours, u.name AS user_name
+             FROM work_logs wl
+             JOIN users u ON u.id = wl.user_id
+             LEFT JOIN tasks t ON t.id = wl.task_id
+             WHERE wl.log_date BETWEEN ? AND ?"
+        );
+        $stmt->execute([$fromDate, $toDate]);
+
+        $grouped = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $moduleKey = $row['module_name'] ?: 'General';
+            $taskKey = $row['task_label'] ?: 'General';
+            $hours = (float) $row['hours'];
+
+            if ($view === 'user') {
+                $rowKey = $row['user_name'] ?: 'Unassigned';
+                $clientKey = $row['project_group'] ?: 'Unassigned';
+                $grouped[$rowKey][$clientKey][$moduleKey][$taskKey] = ($grouped[$rowKey][$clientKey][$moduleKey][$taskKey] ?? 0) + $hours;
+            } else {
+                $rowKey = $row['project_group'] ?: 'Unassigned';
+                $grouped[$rowKey][$moduleKey][$taskKey] = ($grouped[$rowKey][$moduleKey][$taskKey] ?? 0) + $hours;
+            }
+        }
+
+        self::sortBreakdown($grouped);
+        return $grouped;
+    }
+
+    private static function sortBreakdown(array &$branch): void
+    {
+        ksort($branch);
+        foreach ($branch as &$child) {
+            if (is_array($child)) {
+                self::sortBreakdown($child);
+            }
+        }
+    }
+
     public static function dateRange(?string $fromDate = null, ?string $toDate = null): array
     {
         $from = $fromDate ?: date('Y-m-01');

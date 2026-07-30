@@ -6,6 +6,7 @@
     <a class="btn ghost" href="<?= e($returnTo === 'task' && $log['task_id'] ? '/tasks/show?id=' . $log['task_id'] : '/work-logs') ?>">Back</a>
 </section>
 
+<?php require __DIR__ . '/../partials/suggestions.php'; ?>
 <form method="post" class="panel form-grid">
     <?= csrf_field() ?>
     <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">
@@ -14,15 +15,15 @@
     <?php endif; ?>
     <label>
         Client Name
-        <input type="text" name="project_group" value="<?= e($log['project_group']) ?>" required>
+        <input type="text" name="project_group" value="<?= e($log['project_group']) ?>" list="suggest-clients" autocomplete="off" required>
     </label>
     <label>
         Project Phase
-        <input type="text" name="phase" value="<?= e($log['phase']) ?>" required>
+        <input type="text" name="phase" value="<?= e($log['phase']) ?>" list="suggest-phases" autocomplete="off" required>
     </label>
     <label class="span-2">
         Module Number & Name
-        <input type="text" name="module_name" value="<?= e($log['module_name']) ?>" required>
+        <input type="text" name="module_name" value="<?= e($log['module_name']) ?>" list="suggest-task-lists" autocomplete="off" required>
     </label>
     <label>
         Task Category
