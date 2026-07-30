@@ -437,6 +437,37 @@ textarea {
     width: auto;
 }
 
+.autosuggest-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    margin: 4px 0 0;
+    padding: 6px;
+    list-style: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.autosuggest-list li {
+    padding: 9px 10px;
+    border-radius: 5px;
+    color: var(--text);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.autosuggest-list li:hover,
+.autosuggest-list li.active {
+    background: var(--surface-soft);
+    color: var(--primary-dark);
+}
+
 .time-range-inputs.compact {
     min-width: 240px;
 }
@@ -1420,105 +1451,23 @@ textarea {
 
 .timelog-breakdown-row td {
     background: #fafbfd;
-    padding: 4px 14px 12px;
-}
-
-.breakdown-tree {
-    display: grid;
-    border-top: 1px solid var(--line);
-}
-
-.breakdown-group {
-    border-bottom: 1px solid var(--line);
-}
-
-.breakdown-group:last-child {
-    border-bottom: none;
-}
-
-.breakdown-group.nested {
-    border-bottom: none;
-    padding-left: 18px;
-    border-left: 1px solid var(--line);
-    margin-left: 5px;
-}
-
-.breakdown-group.nested:last-child {
-    padding-bottom: 2px;
-}
-
-.breakdown-group summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 9px 4px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-    color: var(--text);
-    list-style: none;
-    border-radius: 4px;
-}
-
-.breakdown-group summary:hover {
-    background: var(--surface-soft);
-}
-
-.breakdown-group summary::-webkit-details-marker {
-    display: none;
-}
-
-.breakdown-group summary::before {
-    content: '';
-    flex: none;
-    width: 6px;
-    height: 6px;
-    margin-right: 9px;
-    border-right: 1.5px solid var(--muted);
-    border-bottom: 1.5px solid var(--muted);
-    transform: rotate(-45deg);
-    transition: transform 0.15s ease;
-}
-
-.breakdown-group[open] > summary::before {
-    transform: rotate(45deg);
-}
-
-.breakdown-group summary > span:first-child {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.breakdown-group ul {
-    list-style: none;
-    margin: 0;
-    padding: 0 4px 6px 19px;
-    display: grid;
-    gap: 2px;
-}
-
-.breakdown-group li {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 4px 0;
+    font-variant-numeric: tabular-nums;
     color: var(--muted);
+}
+
+.timelog-breakdown-row td:not(:nth-child(2)) {
     font-size: 12.5px;
 }
 
-.breakdown-hours {
-    color: var(--muted);
+.timelog-breakdown-row .breakdown-label {
+    text-align: left;
     font-weight: 600;
-    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--text);
     white-space: nowrap;
 }
 
-.breakdown-group > summary .breakdown-hours {
+.timelog-breakdown-row td strong {
     color: var(--primary-dark);
 }
 
@@ -1551,9 +1500,9 @@ textarea {
     background: #fff;
 }
 
+.timelog-breakdown-row td:first-child,
 .timelog-breakdown-row td:nth-child(2) {
-    position: static;
-    background: transparent;
+    background: #fafbfd;
 }
 
 .status-pill {

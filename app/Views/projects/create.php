@@ -28,7 +28,7 @@
     </label>
     <label>
         Project Group (freeform, used only when no client is picked)
-        <input type="text" name="project_group" placeholder="Client or group name" list="suggest-clients">
+        <input type="text" name="project_group" placeholder="Client or group name" data-autosuggest="clients" autocomplete="off">
     </label>
     <label>
         Title Color (used to tint the project title on the Projects page)

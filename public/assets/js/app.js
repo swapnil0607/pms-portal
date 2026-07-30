@@ -11,6 +11,134 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Client -> Phase -> Module cascading: picking a client narrows the phase
+    // list to that client's own phases, picking a phase narrows the module
+    // list further. Falls back to the broader (unfiltered) set whenever the
+    // sibling field's current text doesn't match a known value yet, so a
+    // brand-new client/phase can still be typed freehand.
+    function pmsAutosuggestSource(input) {
+        const data = window.__pmsSuggestions || {};
+        const key = input.dataset.autosuggest;
+
+        if (key === 'clients') {
+            return data.clients || [];
+        }
+
+        const hierarchy = data.hierarchy || {};
+        const form = input.closest('form') || document;
+        const clientInput = form.querySelector('[data-autosuggest="clients"]');
+        const clientValue = clientInput ? clientInput.value.trim() : '';
+        const clientNode = Object.prototype.hasOwnProperty.call(hierarchy, clientValue) ? hierarchy[clientValue] : null;
+
+        if (key === 'phases') {
+            if (clientNode) {
+                return Object.keys(clientNode);
+            }
+            const all = new Set();
+            Object.values(hierarchy).forEach((phases) => Object.keys(phases).forEach((p) => all.add(p)));
+            return Array.from(all);
+        }
+
+        if (key === 'taskLists') {
+            const phaseInput = form.querySelector('[data-autosuggest="phases"]');
+            const phaseValue = phaseInput ? phaseInput.value.trim() : '';
+
+            if (clientNode) {
+                if (Object.prototype.hasOwnProperty.call(clientNode, phaseValue)) {
+                    return clientNode[phaseValue];
+                }
+                const clientModules = new Set();
+                Object.values(clientNode).forEach((modules) => modules.forEach((m) => clientModules.add(m)));
+                return Array.from(clientModules);
+            }
+
+            const all = new Set();
+            Object.values(hierarchy).forEach((phases) => Object.values(phases).forEach((modules) => modules.forEach((m) => all.add(m))));
+            return Array.from(all);
+        }
+
+        return [];
+    }
+
+    document.querySelectorAll('[data-autosuggest]').forEach((input) => {
+        const wrap = input.parentElement;
+        if (wrap && getComputedStyle(wrap).position === 'static') {
+            wrap.style.position = 'relative';
+        }
+
+        const list = document.createElement('ul');
+        list.className = 'autosuggest-list';
+        list.hidden = true;
+        input.insertAdjacentElement('afterend', list);
+
+        let activeIndex = -1;
+
+        const setActive = (index) => {
+            const items = Array.from(list.children);
+            items.forEach((item, i) => item.classList.toggle('active', i === index));
+            if (index >= 0 && items[index]) {
+                items[index].scrollIntoView({ block: 'nearest' });
+            }
+            activeIndex = index;
+        };
+
+        const render = () => {
+            const source = pmsAutosuggestSource(input);
+            const query = input.value.trim().toLowerCase();
+            const matches = (query === '' ? source : source.filter((value) => value.toLowerCase().includes(query))).slice(0, 20);
+            list.innerHTML = '';
+            activeIndex = -1;
+
+            if (!matches.length) {
+                list.hidden = true;
+                return;
+            }
+
+            matches.forEach((value) => {
+                const item = document.createElement('li');
+                item.textContent = value;
+                item.addEventListener('mousedown', (event) => {
+                    event.preventDefault();
+                    input.value = value;
+                    list.hidden = true;
+                    input.focus();
+                });
+                list.appendChild(item);
+            });
+            list.hidden = false;
+        };
+
+        input.addEventListener('focus', render);
+        input.addEventListener('input', render);
+
+        input.addEventListener('blur', () => {
+            window.setTimeout(() => {
+                list.hidden = true;
+            }, 120);
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (list.hidden) {
+                return;
+            }
+
+            const items = Array.from(list.children);
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                setActive(Math.min(activeIndex + 1, items.length - 1));
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                setActive(Math.max(activeIndex - 1, 0));
+            } else if (event.key === 'Enter' && activeIndex >= 0 && items[activeIndex]) {
+                event.preventDefault();
+                input.value = items[activeIndex].textContent || '';
+                list.hidden = true;
+            } else if (event.key === 'Escape') {
+                list.hidden = true;
+            }
+        });
+    });
+
     document.querySelectorAll('.color-field').forEach((field) => {
         const colorInput = field.querySelector('input[type="color"]');
         const clearCheckbox = field.querySelector('input[type="checkbox"]');
@@ -250,18 +378,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.querySelectorAll('.timelog-table [data-breakdown-toggle]').forEach((toggle) => {
-        toggle.addEventListener('click', () => {
-            const row = toggle.closest('tr')?.nextElementSibling;
-            if (!row || !row.hasAttribute('data-breakdown-row')) {
-                return;
-            }
-            const expanded = !row.hidden;
-            row.hidden = expanded;
-            toggle.setAttribute('aria-expanded', String(!expanded));
-            toggle.classList.toggle('expanded', !expanded);
+    const timelogTable = document.querySelector('.timelog-table');
+    if (timelogTable) {
+        const collapseDescendants = (parentId) => {
+            timelogTable.querySelectorAll(`[data-parent-id="${cssEscape(parentId)}"]`).forEach((child) => {
+                child.hidden = true;
+                const childToggle = child.querySelector('[data-breakdown-toggle]');
+                if (childToggle) {
+                    childToggle.setAttribute('aria-expanded', 'false');
+                    childToggle.classList.remove('expanded');
+                }
+                collapseDescendants(child.dataset.rowId);
+            });
+        };
+
+        timelogTable.querySelectorAll('[data-breakdown-toggle]').forEach((toggle) => {
+            toggle.addEventListener('click', () => {
+                const children = timelogTable.querySelectorAll(`[data-parent-id="${cssEscape(toggle.dataset.targetParent)}"]`);
+                if (!children.length) {
+                    return;
+                }
+
+                const expanding = children[0].hidden;
+                children.forEach((child) => {
+                    child.hidden = !expanding;
+                });
+                if (!expanding) {
+                    children.forEach((child) => collapseDescendants(child.dataset.rowId));
+                }
+                toggle.setAttribute('aria-expanded', String(expanding));
+                toggle.classList.toggle('expanded', expanding);
+            });
         });
-    });
+    }
 
     const kanbanBoard = document.querySelector('[data-kanban-board]');
     if (kanbanBoard) {
@@ -282,68 +431,88 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        kanbanBoard.querySelectorAll('.kanban-card[draggable="true"]').forEach((card) => {
-            card.addEventListener('dragstart', (event) => {
-                draggedCard = card;
-                card.classList.add('dragging');
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('text/plain', card.dataset.taskId || '');
-            });
+        let activeDropColumn = null;
 
-            card.addEventListener('dragend', () => {
-                card.classList.remove('dragging');
-                kanbanBoard.querySelectorAll('.kanban-column.drop-target').forEach((column) => column.classList.remove('drop-target'));
-                draggedCard = null;
-            });
+        const clearDropTarget = () => {
+            if (activeDropColumn) {
+                activeDropColumn.classList.remove('drop-target');
+                activeDropColumn = null;
+            }
+        };
+
+        // Delegated on the board itself (rather than per-card/per-column) so
+        // there is exactly one listener per event type and no gap in
+        // coverage — wherever inside the board the cursor is when it drops,
+        // this always sees it via bubbling.
+        kanbanBoard.addEventListener('dragstart', (event) => {
+            const card = event.target.closest('.kanban-card[draggable="true"]');
+            if (!card) {
+                return;
+            }
+            draggedCard = card;
+            card.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', card.dataset.taskId || '');
         });
 
-        // The whole column (not just the card stack) is the drop target, so
-        // hovering over the header or empty padding still accepts the drop.
-        kanbanBoard.querySelectorAll('.kanban-column').forEach((column) => {
-            column.addEventListener('dragover', (event) => {
-                if (!draggedCard) {
-                    return;
-                }
-                event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
+        kanbanBoard.addEventListener('dragend', (event) => {
+            const card = event.target.closest('.kanban-card[draggable="true"]');
+            if (card) {
+                card.classList.remove('dragging');
+            }
+            clearDropTarget();
+            draggedCard = null;
+        });
+
+        kanbanBoard.addEventListener('dragover', (event) => {
+            if (!draggedCard) {
+                return;
+            }
+            const column = event.target.closest('.kanban-column');
+            if (!column) {
+                return;
+            }
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            if (activeDropColumn !== column) {
+                clearDropTarget();
+                activeDropColumn = column;
                 column.classList.add('drop-target');
+            }
+        });
+
+        kanbanBoard.addEventListener('drop', async (event) => {
+            const column = event.target.closest('.kanban-column');
+            if (!column) {
+                return;
+            }
+            event.preventDefault();
+            clearDropTarget();
+
+            if (!draggedCard) {
+                return;
+            }
+
+            const sourceColumn = draggedCard.closest('.kanban-column');
+            const status = column.dataset.status || '';
+            if (!sourceColumn || sourceColumn === column) {
+                return;
+            }
+
+            await postMove('/tasks/status', {
+                task_id: draggedCard.dataset.taskId,
+                project_id: draggedCard.dataset.kanbanProjectId,
+                status,
             });
 
-            column.addEventListener('dragleave', (event) => {
-                if (!column.contains(event.relatedTarget)) {
-                    column.classList.remove('drop-target');
-                }
-            });
-
-            column.addEventListener('drop', async (event) => {
-                event.preventDefault();
-                column.classList.remove('drop-target');
-
-                if (!draggedCard) {
-                    return;
-                }
-
-                const sourceColumn = draggedCard.closest('.kanban-column');
-                const status = column.dataset.status || '';
-                if (!sourceColumn || sourceColumn === column) {
-                    return;
-                }
-
-                await postMove('/tasks/status', {
-                    task_id: draggedCard.dataset.taskId,
-                    project_id: draggedCard.dataset.kanbanProjectId,
-                    status,
-                });
-
-                const stack = column.querySelector('.kanban-stack');
-                stack.insertBefore(draggedCard, stack.querySelector('.kanban-empty'));
-                const statusSelect = draggedCard.querySelector('.kanban-move select[name="status"]');
-                if (statusSelect) {
-                    statusSelect.value = status;
-                }
-                updateKanbanCount(sourceColumn);
-                updateKanbanCount(column);
-            });
+            const stack = column.querySelector('.kanban-stack');
+            stack.insertBefore(draggedCard, stack.querySelector('.kanban-empty'));
+            const statusSelect = draggedCard.querySelector('.kanban-move select[name="status"]');
+            if (statusSelect) {
+                statusSelect.value = status;
+            }
+            updateKanbanCount(sourceColumn);
+            updateKanbanCount(column);
         });
     }
 

@@ -31,7 +31,7 @@
     </label>
     <label>
         Project Group (freeform, used only when no client is picked)
-        <input type="text" name="project_group" value="<?= e($project['project_group'] ?? '') ?>" list="suggest-clients">
+        <input type="text" name="project_group" value="<?= e($project['project_group'] ?? '') ?>" data-autosuggest="clients" autocomplete="off">
     </label>
     <label>
         Title Color (used to tint the project title on the Projects page)

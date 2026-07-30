@@ -188,11 +188,13 @@ class WorkLog
      * Per-row drill-down for the Time Logs dashboard: for 'user' rows, nests
      * Client -> Task List -> Task; for 'client' rows the client level is
      * redundant (it IS the row) so nesting starts at Task List -> Task.
+     * Leaves are [log_date => hours] maps (not plain totals) so the
+     * breakdown can show hours per day, same as the top-level matrix.
      */
     public static function breakdown(string $view, string $fromDate, string $toDate): array
     {
         $stmt = Database::connection()->prepare(
-            "SELECT wl.project_group, wl.module_name, COALESCE(t.title, wl.task_category) AS task_label, wl.hours, u.name AS user_name
+            "SELECT wl.project_group, wl.module_name, COALESCE(t.title, wl.task_category) AS task_label, wl.hours, wl.log_date, u.name AS user_name
              FROM work_logs wl
              JOIN users u ON u.id = wl.user_id
              LEFT JOIN tasks t ON t.id = wl.task_id
@@ -205,23 +207,93 @@ class WorkLog
             $moduleKey = $row['module_name'] ?: 'General';
             $taskKey = $row['task_label'] ?: 'General';
             $hours = (float) $row['hours'];
+            $date = $row['log_date'];
 
             if ($view === 'user') {
                 $rowKey = $row['user_name'] ?: 'Unassigned';
                 $clientKey = $row['project_group'] ?: 'Unassigned';
-                $grouped[$rowKey][$clientKey][$moduleKey][$taskKey] = ($grouped[$rowKey][$clientKey][$moduleKey][$taskKey] ?? 0) + $hours;
+                $leaf = &$grouped[$rowKey][$clientKey][$moduleKey][$taskKey];
             } else {
                 $rowKey = $row['project_group'] ?: 'Unassigned';
-                $grouped[$rowKey][$moduleKey][$taskKey] = ($grouped[$rowKey][$moduleKey][$taskKey] ?? 0) + $hours;
+                $leaf = &$grouped[$rowKey][$moduleKey][$taskKey];
             }
+
+            $leaf[$date] = ($leaf[$date] ?? 0) + $hours;
+            unset($leaf);
         }
 
         self::sortBreakdown($grouped);
         return $grouped;
     }
 
+    /**
+     * Flattens one row's breakdown() tree into an ordered list of nodes
+     * (Client/Task List/Task, whichever levels exist) for rendering as
+     * regular table rows: each node carries hours per date (aligned to
+     * $dates) plus its own total, and enough parent/depth bookkeeping for
+     * the UI to nest and collapse/expand them.
+     */
+    public static function rowsForBreakdown(array $tree, array $dates, string $rootId = ''): array
+    {
+        return self::flattenBreakdown($tree, $dates, 0, $rootId)[0];
+    }
+
+    private static function flattenBreakdown(array $tree, array $dates, int $depth, string $parentId): array
+    {
+        $rows = [];
+        $totalDays = array_fill_keys($dates, 0.0);
+
+        foreach ($tree as $label => $value) {
+            $id = ($parentId !== '' ? $parentId . '-' : '') . substr(md5($label), 0, 8);
+            $isLeaf = self::isDayMap($value);
+
+            if ($isLeaf) {
+                $nodeDays = array_fill_keys($dates, 0.0);
+                foreach ($value as $date => $hours) {
+                    if (array_key_exists($date, $nodeDays)) {
+                        $nodeDays[$date] += (float) $hours;
+                    }
+                }
+                $childRows = [];
+            } else {
+                [$childRows, $nodeDays] = self::flattenBreakdown($value, $dates, $depth + 1, $id);
+            }
+
+            $rows[] = [
+                'id' => $id,
+                'parent' => $parentId,
+                'depth' => $depth,
+                'label' => $label,
+                'days' => $nodeDays,
+                'total' => array_sum($nodeDays),
+                'hasChildren' => !$isLeaf,
+            ];
+            $rows = array_merge($rows, $childRows);
+
+            foreach ($nodeDays as $date => $hours) {
+                $totalDays[$date] += $hours;
+            }
+        }
+
+        return [$rows, $totalDays];
+    }
+
+    /** A leaf node is a [date => hours] map; branch nodes are keyed by name instead. */
+    private static function isDayMap(array $value): bool
+    {
+        foreach (array_keys($value) as $key) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $key)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static function sortBreakdown(array &$branch): void
     {
+        if (self::isDayMap($branch)) {
+            return;
+        }
         ksort($branch);
         foreach ($branch as &$child) {
             if (is_array($child)) {

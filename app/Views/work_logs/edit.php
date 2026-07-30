@@ -15,15 +15,15 @@
     <?php endif; ?>
     <label>
         Client Name
-        <input type="text" name="project_group" value="<?= e($log['project_group']) ?>" list="suggest-clients" required>
+        <input type="text" name="project_group" value="<?= e($log['project_group']) ?>" data-autosuggest="clients" autocomplete="off" required>
     </label>
     <label>
         Project Phase
-        <input type="text" name="phase" value="<?= e($log['phase']) ?>" list="suggest-phases" required>
+        <input type="text" name="phase" value="<?= e($log['phase']) ?>" data-autosuggest="phases" autocomplete="off" required>
     </label>
     <label class="span-2">
         Module Number & Name
-        <input type="text" name="module_name" value="<?= e($log['module_name']) ?>" list="suggest-task-lists" required>
+        <input type="text" name="module_name" value="<?= e($log['module_name']) ?>" data-autosuggest="taskLists" autocomplete="off" required>
     </label>
     <label>
         Task Category

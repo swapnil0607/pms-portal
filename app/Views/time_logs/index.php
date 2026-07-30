@@ -29,16 +29,7 @@
     </div>
 </form>
 
-<?php
-$sumHours = function (array $branch) use (&$sumHours): float {
-    $total = 0.0;
-    foreach ($branch as $value) {
-        $total += is_array($value) ? $sumHours($value) : (float) $value;
-    }
-    return $total;
-};
-$columnCount = count($dates) + 3;
-?>
+<?php $columnCount = count($dates) + 3; ?>
 <div class="panel report-table-panel">
     <div class="wide-table-wrap">
         <table class="data-table timelog-table">
@@ -61,12 +52,15 @@ $columnCount = count($dates) + 3;
                     <td colspan="<?= e((string) $columnCount) ?>">No logs found.</td>
                 </tr>
             <?php endif; ?>
-            <?php foreach ($rows as $row): ?>
-                <?php $rowBreakdown = $breakdown[$row['name']] ?? []; ?>
+            <?php foreach ($rows as $index => $row): ?>
+                <?php
+                    $rowId = 'row-' . $index;
+                    $breakdownRows = \App\Models\WorkLog::rowsForBreakdown($breakdown[$row['name']] ?? [], $dates, $rowId);
+                ?>
                 <tr>
                     <td class="toggle-col">
-                        <?php if ($rowBreakdown): ?>
-                            <button type="button" class="breakdown-toggle" data-breakdown-toggle aria-expanded="false">▸</button>
+                        <?php if ($breakdownRows): ?>
+                            <button type="button" class="breakdown-toggle" data-breakdown-toggle data-target-parent="<?= e($rowId) ?>" aria-expanded="false">▸</button>
                         <?php endif; ?>
                     </td>
                     <td><strong><?= e($row['name']) ?></strong></td>
@@ -75,43 +69,22 @@ $columnCount = count($dates) + 3;
                     <?php endforeach; ?>
                     <td><strong><?= e((string) $row['total']) ?></strong></td>
                 </tr>
-                <?php if ($rowBreakdown): ?>
-                    <tr class="timelog-breakdown-row" data-breakdown-row hidden>
-                        <td></td>
-                        <td colspan="<?= e((string) ($columnCount - 1)) ?>">
-                            <div class="breakdown-tree">
-                                <?php if ($view === 'user'): ?>
-                                    <?php foreach ($rowBreakdown as $clientName => $taskLists): ?>
-                                        <details class="breakdown-group">
-                                            <summary><span><?= e($clientName) ?></span><span class="breakdown-hours"><?= e(number_format($sumHours($taskLists), 2)) ?> hrs</span></summary>
-                                            <?php foreach ($taskLists as $taskListName => $tasks): ?>
-                                                <details class="breakdown-group nested">
-                                                    <summary><span><?= e($taskListName) ?></span><span class="breakdown-hours"><?= e(number_format($sumHours($tasks), 2)) ?> hrs</span></summary>
-                                                    <ul>
-                                                        <?php foreach ($tasks as $taskLabel => $hours): ?>
-                                                            <li><span><?= e($taskLabel) ?></span><span class="breakdown-hours"><?= e(number_format((float) $hours, 2)) ?> hrs</span></li>
-                                                        <?php endforeach; ?>
-                                                    </ul>
-                                                </details>
-                                            <?php endforeach; ?>
-                                        </details>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <?php foreach ($rowBreakdown as $taskListName => $tasks): ?>
-                                        <details class="breakdown-group">
-                                            <summary><span><?= e($taskListName) ?></span><span class="breakdown-hours"><?= e(number_format($sumHours($tasks), 2)) ?> hrs</span></summary>
-                                            <ul>
-                                                <?php foreach ($tasks as $taskLabel => $hours): ?>
-                                                    <li><span><?= e($taskLabel) ?></span><span class="breakdown-hours"><?= e(number_format((float) $hours, 2)) ?> hrs</span></li>
-                                                <?php endforeach; ?>
-                                            </ul>
-                                        </details>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </div>
+                <?php foreach ($breakdownRows as $node): ?>
+                    <tr class="timelog-breakdown-row" data-breakdown-row data-row-id="<?= e($node['id']) ?>" data-parent-id="<?= e($node['parent']) ?>" hidden>
+                        <td class="toggle-col">
+                            <?php if ($node['hasChildren']): ?>
+                                <button type="button" class="breakdown-toggle" data-breakdown-toggle data-target-parent="<?= e($node['id']) ?>" aria-expanded="false">▸</button>
+                            <?php endif; ?>
                         </td>
+                        <td class="breakdown-label" style="padding-left: <?= e((string) (16 + $node['depth'] * 18)) ?>px">
+                            <?= e($node['label']) ?>
+                        </td>
+                        <?php foreach ($dates as $date): ?>
+                            <td><?= $node['days'][$date] > 0 ? e(number_format($node['days'][$date], 2)) : '' ?></td>
+                        <?php endforeach; ?>
+                        <td><strong><?= e(number_format($node['total'], 2)) ?></strong></td>
                     </tr>
-                <?php endif; ?>
+                <?php endforeach; ?>
             <?php endforeach; ?>
             </tbody>
         </table>

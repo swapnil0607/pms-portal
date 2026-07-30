@@ -17,13 +17,13 @@ use App\Models\TimesheetXlsxExporter;
 use App\Models\User;
 use App\Models\WorkLog;
 
-function suggestions_data(): array
+function suggestions_data(bool $withHierarchy = false): array
 {
-    return [
-        'clients' => Suggestions::clients(),
-        'phases' => Suggestions::phases(),
-        'taskLists' => Suggestions::taskLists(),
-    ];
+    if ($withHierarchy) {
+        return ['hierarchy' => Suggestions::hierarchy()];
+    }
+
+    return ['clients' => Suggestions::clients()];
 }
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -179,7 +179,7 @@ if ($path === '/work-logs') {
         'title' => 'Daily Log',
         'categories' => WorkLog::CATEGORIES,
         'recentLogs' => WorkLog::recentForUser((int) $_SESSION['user_id']),
-        'suggestions' => suggestions_data(),
+        'suggestions' => suggestions_data(true),
     ]);
     exit;
 }
@@ -285,7 +285,7 @@ if ($path === '/work-logs/edit') {
         'categories' => WorkLog::CATEGORIES,
         'returnTo' => $returnTo,
         'error' => $error,
-        'suggestions' => suggestions_data(),
+        'suggestions' => suggestions_data(true),
     ]);
     exit;
 }
