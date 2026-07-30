@@ -267,61 +267,65 @@ document.addEventListener('DOMContentLoaded', () => {
     if (kanbanBoard) {
         let draggedCard = null;
 
-        const updateKanbanCounts = (...stacks) => {
-            stacks.forEach((stackEl) => {
-                if (!stackEl) {
-                    return;
-                }
-                const column = stackEl.closest('.kanban-column');
-                const countEl = column?.querySelector('[data-column-count]');
-                const emptyEl = stackEl.querySelector('.kanban-empty');
-                const cardCount = stackEl.querySelectorAll('.kanban-card').length;
-                if (countEl) {
-                    countEl.textContent = String(cardCount);
-                }
-                if (emptyEl) {
-                    emptyEl.hidden = cardCount > 0;
-                }
-            });
+        const updateKanbanCount = (columnEl) => {
+            if (!columnEl) {
+                return;
+            }
+            const countEl = columnEl.querySelector('[data-column-count]');
+            const emptyEl = columnEl.querySelector('.kanban-empty');
+            const cardCount = columnEl.querySelectorAll('.kanban-card').length;
+            if (countEl) {
+                countEl.textContent = String(cardCount);
+            }
+            if (emptyEl) {
+                emptyEl.hidden = cardCount > 0;
+            }
         };
 
         kanbanBoard.querySelectorAll('.kanban-card[draggable="true"]').forEach((card) => {
-            card.addEventListener('dragstart', () => {
+            card.addEventListener('dragstart', (event) => {
                 draggedCard = card;
                 card.classList.add('dragging');
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', card.dataset.taskId || '');
             });
 
             card.addEventListener('dragend', () => {
                 card.classList.remove('dragging');
-                kanbanBoard.querySelectorAll('.kanban-stack.drop-target').forEach((stack) => stack.classList.remove('drop-target'));
+                kanbanBoard.querySelectorAll('.kanban-column.drop-target').forEach((column) => column.classList.remove('drop-target'));
                 draggedCard = null;
             });
         });
 
-        kanbanBoard.querySelectorAll('.kanban-stack').forEach((stack) => {
-            stack.addEventListener('dragover', (event) => {
+        // The whole column (not just the card stack) is the drop target, so
+        // hovering over the header or empty padding still accepts the drop.
+        kanbanBoard.querySelectorAll('.kanban-column').forEach((column) => {
+            column.addEventListener('dragover', (event) => {
                 if (!draggedCard) {
                     return;
                 }
                 event.preventDefault();
-                stack.classList.add('drop-target');
+                event.dataTransfer.dropEffect = 'move';
+                column.classList.add('drop-target');
             });
 
-            stack.addEventListener('dragleave', () => {
-                stack.classList.remove('drop-target');
+            column.addEventListener('dragleave', (event) => {
+                if (!column.contains(event.relatedTarget)) {
+                    column.classList.remove('drop-target');
+                }
             });
 
-            stack.addEventListener('drop', async (event) => {
+            column.addEventListener('drop', async (event) => {
                 event.preventDefault();
-                stack.classList.remove('drop-target');
+                column.classList.remove('drop-target');
 
                 if (!draggedCard) {
                     return;
                 }
 
-                const sourceStack = draggedCard.closest('.kanban-stack');
-                const status = stack.dataset.status || '';
-                if (!sourceStack || sourceStack === stack) {
+                const sourceColumn = draggedCard.closest('.kanban-column');
+                const status = column.dataset.status || '';
+                if (!sourceColumn || sourceColumn === column) {
                     return;
                 }
 
@@ -331,12 +335,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     status,
                 });
 
+                const stack = column.querySelector('.kanban-stack');
                 stack.insertBefore(draggedCard, stack.querySelector('.kanban-empty'));
                 const statusSelect = draggedCard.querySelector('.kanban-move select[name="status"]');
                 if (statusSelect) {
                     statusSelect.value = status;
                 }
-                updateKanbanCounts(sourceStack, stack);
+                updateKanbanCount(sourceColumn);
+                updateKanbanCount(column);
             });
         });
     }

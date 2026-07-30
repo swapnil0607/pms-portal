@@ -17,15 +17,15 @@
     <?= csrf_field() ?>
     <label>
         Client Name
-        <input type="text" name="project_group" placeholder="Example: ABC School" list="suggest-clients" autocomplete="off" required>
+        <input type="text" name="project_group" placeholder="Example: ABC School" list="suggest-clients" required>
     </label>
     <label>
         Project Phase
-        <input type="text" name="phase" placeholder="Example: Implementation Phase 1" list="suggest-phases" autocomplete="off" required>
+        <input type="text" name="phase" placeholder="Example: Implementation Phase 1" list="suggest-phases" required>
     </label>
     <label class="span-2">
         Module Number & Name
-        <input type="text" name="module_name" placeholder="Example: M01 - Student Admission" list="suggest-task-lists" autocomplete="off" required>
+        <input type="text" name="module_name" placeholder="Example: M01 - Student Admission" list="suggest-task-lists" required>
     </label>
     <label>
         Task Category

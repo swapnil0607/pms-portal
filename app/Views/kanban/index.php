@@ -37,13 +37,13 @@
 
 <section class="kanban-board" data-kanban-board>
     <?php foreach ($statuses as $status): ?>
-        <div class="kanban-column">
+        <div class="kanban-column" data-status="<?= e($status) ?>">
             <header>
                 <h3><?= e($labels[$status]) ?></h3>
                 <span data-column-count><?= e((string) count($columns[$status])) ?></span>
             </header>
 
-            <div class="kanban-stack" data-status="<?= e($status) ?>">
+            <div class="kanban-stack">
                 <p class="kanban-empty" <?= $columns[$status] ? 'hidden' : '' ?>>No tasks</p>
 
                 <?php foreach ($columns[$status] as $task): ?>

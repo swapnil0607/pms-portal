@@ -57,8 +57,8 @@ if ($currentPath === '/') {
     <title><?= e($title ?? config('app.name')) ?> | <?= e(config('app.name')) ?></title>
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <meta name="app-base-path" content="<?= e(app_base_path()) ?>">
-    <link rel="stylesheet" href="<?= e(url('/public/assets/css/app.css')) ?>">
-    <script defer src="<?= e(url('/public/assets/js/app.js')) ?>"></script>
+    <link rel="stylesheet" href="<?= e(asset_url('/public/assets/css/app.css')) ?>">
+    <script defer src="<?= e(asset_url('/public/assets/js/app.js')) ?>"></script>
 </head>
 <body>
     <div class="app-shell">

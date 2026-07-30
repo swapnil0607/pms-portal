@@ -76,6 +76,18 @@ function url(string $path = '/'): string
     return app_base_path() . ($path === '//' ? '/' : $path);
 }
 
+/**
+ * Same as url(), but appends the file's mtime as a ?v= query string so
+ * browsers fetch a fresh copy whenever this file changes on deploy,
+ * instead of serving a stale cached CSS/JS after an update is uploaded.
+ */
+function asset_url(string $path): string
+{
+    $filePath = __DIR__ . '/../' . ltrim($path, '/');
+    $version = is_file($filePath) ? filemtime($filePath) : time();
+    return url($path) . '?v=' . $version;
+}
+
 function redirect(string $path): never
 {
     header('Location: ' . url($path));

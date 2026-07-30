@@ -42,7 +42,7 @@
     </label>
     <label>
         Client Name
-        <input type="text" name="project_group" value="<?= e($filters['project_group'] ?? '') ?>" placeholder="Search client" list="suggest-clients" autocomplete="off">
+        <input type="text" name="project_group" value="<?= e($filters['project_group'] ?? '') ?>" placeholder="Search client" list="suggest-clients">
     </label>
     <label>
         User
