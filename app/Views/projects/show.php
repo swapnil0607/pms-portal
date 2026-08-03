@@ -193,6 +193,7 @@ $taskUrl = '/projects/show?' . http_build_query([
                             <option value="low">Low</option>
                         </select>
                     </div>
+                    <div class="workload-preview" data-workload hidden></div>
                     <textarea name="description" rows="2" placeholder="Short description"></textarea>
                     <button type="submit">Save Task</button>
                 </form>

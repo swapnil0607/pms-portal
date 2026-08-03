@@ -101,6 +101,77 @@ class Task
         return $grouped;
     }
 
+    /**
+     * A user's committed hours per day (Mon-Fri) within [$fromDate, $toDate],
+     * from their other open tasks. Each task's estimated_hours is spread
+     * evenly across the working days in its own start_date..due_date range
+     * (a task with no start_date puts everything on due_date alone; a range
+     * that's entirely a weekend falls back to due_date too, so hours are
+     * never silently dropped). Used to preview workload before assigning
+     * or rescheduling a task.
+     */
+    public static function workloadForUser(int $userId, string $fromDate, string $toDate, ?int $excludeTaskId = null): array
+    {
+        $where = ['assigned_to = ?', "status <> 'completed'", 'due_date IS NOT NULL', 'estimated_hours IS NOT NULL'];
+        $params = [$userId];
+        if ($excludeTaskId) {
+            $where[] = 'id <> ?';
+            $params[] = $excludeTaskId;
+        }
+
+        $stmt = Database::connection()->prepare(
+            'SELECT start_date, due_date, estimated_hours FROM tasks WHERE ' . implode(' AND ', $where)
+        );
+        $stmt->execute($params);
+
+        $rangeStart = new \DateTimeImmutable($fromDate);
+        $rangeEnd = new \DateTimeImmutable($toDate);
+        $load = [];
+
+        foreach ($stmt->fetchAll() as $row) {
+            $hours = (float) $row['estimated_hours'];
+            if ($hours <= 0) {
+                continue;
+            }
+
+            foreach (self::distributeHours($row['start_date'], $row['due_date'], $hours) as $date => $dayHours) {
+                $dateObj = new \DateTimeImmutable($date);
+                if ($dateObj < $rangeStart || $dateObj > $rangeEnd) {
+                    continue;
+                }
+                $load[$date] = ($load[$date] ?? 0) + $dayHours;
+            }
+        }
+
+        ksort($load);
+        return $load;
+    }
+
+    /** Evenly spreads $hours across the Mon-Fri days between $startDate and $dueDate (inclusive); falls back to $dueDate alone if that range has none. */
+    private static function distributeHours(?string $startDate, string $dueDate, float $hours): array
+    {
+        $start = $startDate ?: $dueDate;
+        $startDt = new \DateTimeImmutable($start);
+        $dueDt = new \DateTimeImmutable($dueDate);
+        if ($startDt > $dueDt) {
+            $startDt = $dueDt;
+        }
+
+        $weekdays = [];
+        for ($cursor = $startDt; $cursor <= $dueDt; $cursor = $cursor->modify('+1 day')) {
+            if ((int) $cursor->format('N') <= 5) {
+                $weekdays[] = $cursor->format('Y-m-d');
+            }
+        }
+
+        if (!$weekdays) {
+            $weekdays = [$dueDt->format('Y-m-d')];
+        }
+
+        $perDay = $hours / count($weekdays);
+        return array_fill_keys($weekdays, $perDay);
+    }
+
     public static function myWork(int $userId): array
     {
         $stmt = Database::connection()->prepare(

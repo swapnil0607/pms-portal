@@ -45,6 +45,7 @@ $formatTaskLogHours = static function (float $hours, ?string $dailyLog = null): 
                 <?php endforeach; ?>
             </select>
         </label>
+        <div class="span-2 workload-preview" data-workload data-exclude-task-id="<?= e((string) $task['id']) ?>" hidden></div>
         <label>
             Status
             <select name="status">

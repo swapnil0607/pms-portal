@@ -969,6 +969,66 @@ textarea {
     gap: 8px;
 }
 
+.workload-preview {
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.workload-caption {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.workload-empty {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.workload-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+.workload-table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--muted);
+    padding: 2px 6px 6px 0;
+}
+
+.workload-table td {
+    padding: 3px 6px 3px 0;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.workload-total {
+    font-weight: 800;
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: inline-block;
+}
+
+.workload-total.ok {
+    color: var(--success);
+}
+
+.workload-total.warn {
+    color: var(--warning);
+}
+
+.workload-total.over {
+    color: var(--danger);
+    background: #fdeceb;
+}
+
 .project-builder {
     display: grid;
     grid-template-columns: minmax(220px, 0.6fr) minmax(260px, 0.8fr) minmax(420px, 1.4fr);
@@ -1505,7 +1565,8 @@ textarea {
     white-space: nowrap;
 }
 
-.timelog-table .toggle-col {
+.timelog-table .toggle-col,
+.clients-table .toggle-col {
     width: 32px;
 }
 
@@ -1523,6 +1584,33 @@ textarea {
 
 .breakdown-toggle.expanded {
     transform: rotate(90deg);
+}
+
+.client-projects-row td {
+    background: #fafbfd;
+    padding: 10px 14px 14px;
+}
+
+.client-project-list {
+    display: grid;
+    gap: 6px;
+}
+
+.client-project-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.client-project-item:hover {
+    border-color: var(--primary);
 }
 
 .timelog-breakdown-row td {
@@ -1958,6 +2046,41 @@ textarea {
     gap: 14px;
     align-items: end;
     margin-bottom: 18px;
+}
+
+.filter-bar input[type="date"],
+.filter-bar input[type="month"] {
+    max-width: 170px;
+}
+
+.range-mode-toggle {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    align-self: end;
+}
+
+.range-mode-btn {
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.range-mode-btn:hover {
+    background: rgba(31, 111, 139, 0.08);
+}
+
+.range-mode-btn.active {
+    background: var(--surface);
+    color: var(--primary-dark);
+    box-shadow: var(--shadow);
 }
 
 .filter-actions {

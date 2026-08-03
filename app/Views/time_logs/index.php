@@ -9,18 +9,35 @@
     </div>
 </section>
 
+<?php
+    $tabQuery = http_build_query([
+        'range_mode' => $rangeMode,
+        'month' => $month,
+        'from_date' => $fromDate,
+        'to_date' => $toDate,
+    ]);
+?>
 <nav class="tabs">
-    <a class="<?= $view === 'user' ? 'active' : '' ?>" href="/time-logs?view=user&from_date=<?= e($fromDate) ?>&to_date=<?= e($toDate) ?>">View by User</a>
-    <a class="<?= $view === 'client' ? 'active' : '' ?>" href="/time-logs?view=client&from_date=<?= e($fromDate) ?>&to_date=<?= e($toDate) ?>">View by Client</a>
+    <a class="<?= $view === 'user' ? 'active' : '' ?>" href="/time-logs?view=user&<?= e($tabQuery) ?>">View by User</a>
+    <a class="<?= $view === 'client' ? 'active' : '' ?>" href="/time-logs?view=client&<?= e($tabQuery) ?>">View by Client</a>
 </nav>
 
 <form method="get" action="/time-logs" class="panel filter-bar timelog-filter">
     <input type="hidden" name="view" value="<?= e($view) ?>">
-    <label>
+    <input type="hidden" name="range_mode" value="<?= e($rangeMode) ?>" data-range-mode-input>
+    <div class="range-mode-toggle">
+        <button type="button" class="range-mode-btn <?= $rangeMode === 'month' ? 'active' : '' ?>" data-range-mode-btn="month">Month</button>
+        <button type="button" class="range-mode-btn <?= $rangeMode === 'range' ? 'active' : '' ?>" data-range-mode-btn="range">Date Range</button>
+    </div>
+    <label data-range-field="month" <?= $rangeMode !== 'month' ? 'hidden' : '' ?>>
+        Month
+        <input type="month" name="month" value="<?= e($month) ?>">
+    </label>
+    <label data-range-field="range" <?= $rangeMode !== 'range' ? 'hidden' : '' ?>>
         From Date
         <input type="date" name="from_date" value="<?= e($fromDate) ?>">
     </label>
-    <label>
+    <label data-range-field="range" <?= $rangeMode !== 'range' ? 'hidden' : '' ?>>
         To Date
         <input type="date" name="to_date" value="<?= e($toDate) ?>">
     </label>

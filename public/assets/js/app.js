@@ -139,6 +139,170 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.querySelectorAll('[data-workload]').forEach((panel) => {
+        const form = panel.closest('form');
+        const assigneeSelect = form?.querySelector('select[name="assigned_to"]');
+        if (!form || !assigneeSelect) {
+            return;
+        }
+
+        const startInput = form.querySelector('input[name="start_date"]');
+        const dueInput = form.querySelector('input[name="due_date"]');
+        const hoursInput = form.querySelector('input[name="estimated_hours"]');
+        const excludeTaskId = panel.dataset.excludeTaskId || '';
+
+        // Local-calendar-date formatting: toISOString() converts to UTC first,
+        // which silently shifts the date by a day for any timezone ahead of
+        // UTC (e.g. IST) once local midnight crosses into the previous UTC day.
+        const toDateStr = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        const addDays = (dateStr, amount) => {
+            const date = new Date(`${dateStr}T00:00:00`);
+            date.setDate(date.getDate() + amount);
+            return toDateStr(date);
+        };
+
+        const weekdaysInRange = (startStr, dueStr) => {
+            let cursor = new Date(`${startStr}T00:00:00`);
+            const end = new Date(`${dueStr}T00:00:00`);
+            if (cursor > end) {
+                cursor = new Date(end);
+            }
+            const days = [];
+            while (cursor <= end) {
+                const dow = cursor.getDay();
+                if (dow !== 0 && dow !== 6) {
+                    days.push(toDateStr(cursor));
+                }
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            return days.length ? days : [dueStr];
+        };
+
+        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (ch) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[ch]));
+
+        let debounceTimer = null;
+        let requestToken = 0;
+
+        const render = async () => {
+            const userId = assigneeSelect.value;
+            if (!userId) {
+                panel.hidden = true;
+                panel.innerHTML = '';
+                return;
+            }
+
+            const due = dueInput ? dueInput.value : '';
+            const start = startInput ? startInput.value : '';
+            const hours = parseFloat(hoursInput ? hoursInput.value : '') || 0;
+
+            let windowStart;
+            let windowEnd;
+            let thisTaskDays = [];
+            if (due) {
+                windowStart = start || due;
+                windowEnd = due;
+                thisTaskDays = weekdaysInRange(windowStart, windowEnd);
+            } else {
+                windowStart = toDateStr(new Date());
+                windowEnd = addDays(windowStart, 13);
+            }
+
+            const params = new URLSearchParams({ user_id: userId, from_date: windowStart, to_date: windowEnd });
+            if (excludeTaskId) {
+                params.set('exclude_task_id', excludeTaskId);
+            }
+
+            const token = ++requestToken;
+            let existing = {};
+            try {
+                const resp = await fetch(`${appBasePath}/tasks/workload?${params.toString()}`, { credentials: 'same-origin' });
+                existing = await resp.json();
+            } catch (e) {
+                existing = {};
+            }
+            if (token !== requestToken) {
+                return;
+            }
+
+            const thisTaskPerDay = {};
+            if (hours > 0 && thisTaskDays.length) {
+                const perDay = hours / thisTaskDays.length;
+                thisTaskDays.forEach((date) => {
+                    thisTaskPerDay[date] = (thisTaskPerDay[date] || 0) + perDay;
+                });
+            }
+
+            const allDates = Array.from(new Set([...Object.keys(existing), ...Object.keys(thisTaskPerDay)])).sort();
+            if (!allDates.length) {
+                panel.innerHTML = '<p class="workload-empty">No existing workload for this person in this window.</p>';
+                panel.hidden = false;
+                return;
+            }
+
+            const rows = allDates.map((date) => {
+                const existingHours = existing[date] || 0;
+                const addHours = thisTaskPerDay[date] || 0;
+                const total = existingHours + addHours;
+                const level = total > 10 ? 'over' : total > 8 ? 'warn' : 'ok';
+                const weekday = new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short' });
+                return `<tr>
+                    <td>${escapeHtml(date.slice(5))}</td>
+                    <td class="muted">${escapeHtml(weekday)}</td>
+                    <td>${existingHours ? escapeHtml(existingHours.toFixed(1)) : ''}</td>
+                    <td>${addHours ? '+' + escapeHtml(addHours.toFixed(1)) : ''}</td>
+                    <td class="workload-total ${level}">${escapeHtml(total.toFixed(1))}h</td>
+                </tr>`;
+            }).join('');
+
+            panel.innerHTML = `
+                <p class="workload-caption">Workload preview <span class="muted">(8h/day capacity)</span></p>
+                <table class="workload-table">
+                    <thead><tr><th>Date</th><th></th><th>Existing</th><th>+This task</th><th>Total</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+            panel.hidden = false;
+        };
+
+        const scheduleRender = () => {
+            window.clearTimeout(debounceTimer);
+            debounceTimer = window.setTimeout(render, 300);
+        };
+
+        [assigneeSelect, startInput, dueInput, hoursInput].forEach((el) => {
+            if (!el) {
+                return;
+            }
+            el.addEventListener('change', scheduleRender);
+            el.addEventListener('input', scheduleRender);
+        });
+
+        scheduleRender();
+    });
+
+    const rangeModeInput = document.querySelector('[data-range-mode-input]');
+    if (rangeModeInput) {
+        const form = rangeModeInput.closest('form');
+        form.querySelectorAll('[data-range-mode-btn]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const mode = btn.dataset.rangeModeBtn;
+                rangeModeInput.value = mode;
+                form.querySelectorAll('[data-range-mode-btn]').forEach((b) => b.classList.toggle('active', b === btn));
+                form.querySelectorAll('[data-range-field]').forEach((field) => {
+                    field.hidden = field.dataset.rangeField !== mode;
+                });
+            });
+        });
+    }
+
     document.querySelectorAll('[data-role-select]').forEach((select) => {
         let defaults = {};
         try {
@@ -399,10 +563,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const timelogTable = document.querySelector('.timelog-table');
-    if (timelogTable) {
+    // Generic expandable-row toggle: works for any table using the
+    // data-breakdown-toggle/data-target-parent + data-breakdown-row/
+    // data-parent-id/data-row-id convention (Time Logs breakdown, Clients'
+    // project list, ...). Scoped to each table individually so IDs never
+    // need to be unique across the whole page, only within one table.
+    document.querySelectorAll('table').forEach((table) => {
+        const toggles = table.querySelectorAll('[data-breakdown-toggle]');
+        if (!toggles.length) {
+            return;
+        }
+
         const collapseDescendants = (parentId) => {
-            timelogTable.querySelectorAll(`[data-parent-id="${cssEscape(parentId)}"]`).forEach((child) => {
+            table.querySelectorAll(`[data-parent-id="${cssEscape(parentId)}"]`).forEach((child) => {
                 child.hidden = true;
                 const childToggle = child.querySelector('[data-breakdown-toggle]');
                 if (childToggle) {
@@ -413,9 +586,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
-        timelogTable.querySelectorAll('[data-breakdown-toggle]').forEach((toggle) => {
+        toggles.forEach((toggle) => {
             toggle.addEventListener('click', () => {
-                const children = timelogTable.querySelectorAll(`[data-parent-id="${cssEscape(toggle.dataset.targetParent)}"]`);
+                const children = table.querySelectorAll(`[data-parent-id="${cssEscape(toggle.dataset.targetParent)}"]`);
                 if (!children.length) {
                     return;
                 }
@@ -431,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggle.classList.toggle('expanded', expanding);
             });
         });
-    }
+    });
 
     const kanbanBoard = document.querySelector('[data-kanban-board]');
     if (kanbanBoard) {

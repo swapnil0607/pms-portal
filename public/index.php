@@ -160,7 +160,16 @@ if ($path === '/kanban') {
 
 if ($path === '/time-logs') {
     Permissions::requirePage('time_logs');
-    [$fromDate, $toDate, $dates] = WorkLog::dateRange($_GET['from_date'] ?? null, $_GET['to_date'] ?? null);
+    $rangeMode = ($_GET['range_mode'] ?? 'month') === 'range' ? 'range' : 'month';
+    $month = preg_match('/^\d{4}-\d{2}$/', (string) ($_GET['month'] ?? '')) ? $_GET['month'] : date('Y-m');
+
+    if ($rangeMode === 'range') {
+        [$fromDate, $toDate, $dates] = WorkLog::dateRange($_GET['from_date'] ?? null, $_GET['to_date'] ?? null);
+    } else {
+        $monthStart = $month . '-01';
+        [$fromDate, $toDate, $dates] = WorkLog::dateRange($monthStart, date('Y-m-t', strtotime($monthStart)));
+    }
+
     $view = ($_GET['view'] ?? 'user') === 'client' ? 'client' : 'user';
     $rows = $view === 'client'
         ? WorkLog::timeLogByClient($fromDate, $toDate)
@@ -169,6 +178,8 @@ if ($path === '/time-logs') {
     View::render('time_logs/index', [
         'title' => 'Time Logs',
         'view' => $view,
+        'rangeMode' => $rangeMode,
+        'month' => $month,
         'fromDate' => $fromDate,
         'toDate' => $toDate,
         'dates' => $dates,
@@ -313,9 +324,17 @@ if ($path === '/work-logs/delete' && is_post()) {
 
 if ($path === '/clients') {
     Permissions::requirePage('clients');
+    $projectsByClient = [];
+    foreach (Project::all() as $project) {
+        if ($project['client_id']) {
+            $projectsByClient[(int) $project['client_id']][] = $project;
+        }
+    }
+
     View::render('clients/index', [
         'title' => 'Clients',
         'clients' => Client::all(),
+        'projectsByClient' => $projectsByClient,
     ]);
     exit;
 }
@@ -1042,6 +1061,19 @@ if ($path === '/tasks/quick-update' && is_post()) {
 
     header('Content-Type: application/json');
     echo json_encode(['ok' => true]);
+    exit;
+}
+
+if ($path === '/tasks/workload') {
+    $userId = (int) ($_GET['user_id'] ?? 0);
+    $fromDate = $_GET['from_date'] ?? date('Y-m-d');
+    $toDate = $_GET['to_date'] ?? date('Y-m-d', strtotime('+13 days'));
+    $excludeTaskId = ($_GET['exclude_task_id'] ?? '') !== '' ? (int) $_GET['exclude_task_id'] : null;
+
+    $load = $userId ? Task::workloadForUser($userId, $fromDate, $toDate, $excludeTaskId) : [];
+
+    header('Content-Type: application/json');
+    echo json_encode($load);
     exit;
 }
 
