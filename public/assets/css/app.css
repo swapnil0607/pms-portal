@@ -384,6 +384,15 @@ label {
     font-weight: 700;
 }
 
+/* Setting `display` on any element via author CSS (like the `label` rule
+   above) overrides the browser's built-in `[hidden] { display: none }`
+   rule, since author styles always beat the UA stylesheet regardless of
+   specificity. Without this, a hidden <label> (or anything else with a
+   custom display) stays visible despite the hidden attribute. */
+[hidden] {
+    display: none !important;
+}
+
 input,
 select,
 textarea {
@@ -1530,8 +1539,9 @@ textarea {
     margin: 8px 0 0;
 }
 
-.report-filter {
-    grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+.report-filter select,
+.report-filter input[type="text"] {
+    min-width: 170px;
 }
 
 .report-table-panel {
@@ -2041,11 +2051,16 @@ textarea {
 }
 
 .filter-bar {
-    display: grid;
-    grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
-    gap: 14px;
+    display: flex;
+    flex-wrap: wrap;
     align-items: end;
+    gap: 14px 20px;
     margin-bottom: 18px;
+}
+
+.filter-bar label {
+    flex: 0 1 200px;
+    min-width: 150px;
 }
 
 .filter-bar input[type="date"],
@@ -2086,6 +2101,7 @@ textarea {
 .filter-actions {
     display: flex;
     gap: 10px;
+    flex: 0 0 auto;
 }
 
 .kanban-board {
