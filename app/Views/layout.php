@@ -45,6 +45,8 @@ if ($currentPath === '/') {
     $breadcrumbs[] = ['label' => 'Users', 'href' => null];
 } elseif (str_starts_with($currentPath, '/settings') || str_starts_with($currentPath, '/templates')) {
     $breadcrumbs[] = ['label' => 'Settings', 'href' => null];
+} elseif (str_starts_with($currentPath, '/profile')) {
+    $breadcrumbs[] = ['label' => 'My Profile', 'href' => null];
 } else {
     $breadcrumbs[] = ['label' => $pageTitle, 'href' => null];
 }
@@ -119,7 +121,16 @@ if ($currentPath === '/') {
                     <p><?= e(date('l, d M Y')) ?></p>
                 </div>
                 <div class="user-chip">
-                    <span><?= e($_SESSION['user_name'] ?? 'User') ?></span>
+                    <a class="user-chip-profile" href="/profile">
+                        <span class="avatar avatar-sm">
+                            <?php if (!empty($_SESSION['user_avatar'])): ?>
+                                <img src="<?= e(avatar_url($_SESSION['user_avatar'])) ?>" alt="">
+                            <?php else: ?>
+                                <?= e(user_initials($_SESSION['user_name'] ?? 'User')) ?>
+                            <?php endif; ?>
+                        </span>
+                        <span><?= e($_SESSION['user_name'] ?? 'User') ?></span>
+                    </a>
                     <a href="/logout">Logout</a>
                 </div>
             </header>

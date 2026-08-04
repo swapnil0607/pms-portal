@@ -107,6 +107,87 @@ if ($path === '/my-work') {
     redirect('/');
 }
 
+if ($path === '/profile') {
+    $currentUser = User::find((int) $_SESSION['user_id']);
+    $error = null;
+
+    if (is_post()) {
+        verify_csrf();
+        $name = trim($_POST['name'] ?? '');
+        $data = [
+            'name' => $name,
+            'designation' => trim($_POST['designation'] ?? '') ?: null,
+            'department' => trim($_POST['department'] ?? '') ?: null,
+        ];
+
+        $currentPassword = $_POST['current_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+
+        if ($name === '') {
+            $error = 'Name is required.';
+        } elseif ($newPassword !== '' && !password_verify($currentPassword, $currentUser['password_hash'])) {
+            $error = 'Current password is incorrect.';
+        } elseif ($newPassword !== '' && $newPassword !== $confirmPassword) {
+            $error = 'New password and confirmation do not match.';
+        } elseif ($newPassword !== '' && strlen($newPassword) < 8) {
+            $error = 'New password must be at least 8 characters.';
+        }
+
+        $avatarFile = $_FILES['avatar'] ?? null;
+        if (!$error && $avatarFile && ($avatarFile['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+            $imageInfo = @getimagesize($avatarFile['tmp_name']);
+            $mime = $imageInfo['mime'] ?? '';
+
+            if ($avatarFile['size'] > 3 * 1024 * 1024) {
+                $error = 'Profile picture must be smaller than 3MB.';
+            } elseif (!isset($allowedTypes[$mime])) {
+                $error = 'Profile picture must be a JPG, PNG, or WEBP image.';
+            } else {
+                $uploadDir = __DIR__ . '/assets/uploads/avatars';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0775, true);
+                }
+
+                $filename = $currentUser['id'] . '_' . time() . '.' . $allowedTypes[$mime];
+                $target = $uploadDir . '/' . $filename;
+
+                if (move_uploaded_file($avatarFile['tmp_name'], $target)) {
+                    if (!empty($currentUser['avatar_path'])) {
+                        $old = $uploadDir . '/' . $currentUser['avatar_path'];
+                        if (is_file($old)) {
+                            unlink($old);
+                        }
+                    }
+                    $data['avatar_path'] = $filename;
+                } else {
+                    $error = 'Could not save the uploaded picture. Please try again.';
+                }
+            }
+        }
+
+        if (!$error) {
+            if ($newPassword !== '') {
+                $data['password_hash'] = password_hash($newPassword, PASSWORD_DEFAULT);
+            }
+
+            User::updateSelfProfile((int) $currentUser['id'], $data);
+            $_SESSION['user_name'] = $name;
+            if (array_key_exists('avatar_path', $data)) {
+                $_SESSION['user_avatar'] = $data['avatar_path'];
+            }
+            $_SESSION['flash_success'] = 'Profile updated.';
+            redirect('/profile');
+        }
+
+        $currentUser = array_merge($currentUser, $data);
+    }
+
+    View::render('users/profile', ['title' => 'My Profile', 'profileUser' => $currentUser, 'error' => $error]);
+    exit;
+}
+
 if ($path === '/projects') {
     Permissions::requirePage('projects');
     $showArchived = ($_GET['archived'] ?? '') === '1';

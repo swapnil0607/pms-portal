@@ -88,6 +88,27 @@ function asset_url(string $path): string
     return url($path) . '?v=' . $version;
 }
 
+function user_initials(string $name): string
+{
+    $parts = array_filter(preg_split('/\s+/', trim($name)) ?: []);
+    if (!$parts) {
+        return '?';
+    }
+
+    $first = mb_substr((string) reset($parts), 0, 1);
+    $last = count($parts) > 1 ? mb_substr((string) end($parts), 0, 1) : '';
+    return mb_strtoupper($first . $last);
+}
+
+function avatar_url(?string $avatarPath): ?string
+{
+    if (!$avatarPath) {
+        return null;
+    }
+
+    return asset_url('/public/assets/uploads/avatars/' . $avatarPath);
+}
+
 function redirect(string $path): never
 {
     header('Location: ' . url($path));

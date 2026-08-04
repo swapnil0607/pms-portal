@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   permissions TEXT NULL,
   designation VARCHAR(120) NULL,
   department VARCHAR(120) NULL,
+  avatar_path VARCHAR(255) NULL,
   status ENUM('active','inactive') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

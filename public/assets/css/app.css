@@ -555,6 +555,53 @@ textarea {
     justify-content: flex-end;
 }
 
+.avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    overflow: hidden;
+    flex: none;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+}
+
+.avatar-lg {
+    width: 72px;
+    height: 72px;
+    font-size: 24px;
+}
+
+.avatar-field {
+    align-items: center;
+    display: flex;
+    gap: 18px;
+}
+
+.user-chip-profile {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.avatar-upload-label {
+    cursor: pointer;
+    display: inline-flex;
+}
+
 .project-hero {
     display: flex;
     justify-content: space-between;

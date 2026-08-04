@@ -81,4 +81,25 @@ class User
         $stmt = Database::connection()->prepare('UPDATE users SET permissions = ?, status = ? WHERE id = ?');
         $stmt->execute([json_encode(array_values($pages)), $status, $id]);
     }
+
+    /** Self-service profile update: name, designation, department, avatar, and (optionally) password. Never touches email/role/permissions/status. */
+    public static function updateSelfProfile(int $id, array $data): void
+    {
+        $sql = 'UPDATE users SET name = :name, designation = :designation, department = :department';
+        if (array_key_exists('avatar_path', $data)) {
+            $sql .= ', avatar_path = :avatar_path';
+        } else {
+            unset($data['avatar_path']);
+        }
+        if (!empty($data['password_hash'])) {
+            $sql .= ', password_hash = :password_hash';
+        } else {
+            unset($data['password_hash']);
+        }
+        $sql .= ' WHERE id = :id';
+
+        $data['id'] = $id;
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($data);
+    }
 }

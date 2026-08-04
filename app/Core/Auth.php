@@ -20,6 +20,7 @@ class Auth
         $_SESSION['user_id'] = (int) $user['id'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
+        $_SESSION['user_avatar'] = $user['avatar_path'] ?? null;
         $_SESSION['user_pages'] = User::permissionsFor($user);
         return true;
     }

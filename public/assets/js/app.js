@@ -1026,4 +1026,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return parts[0] * 60 + parts[1];
     }
+
+    // Profile photo picker: swap the avatar circle's contents for a local
+    // preview of the chosen file before the form is even submitted.
+    const avatarInput = document.querySelector('[data-avatar-input]');
+    const avatarPreview = document.querySelector('[data-avatar-preview]');
+    if (avatarInput && avatarPreview) {
+        avatarInput.addEventListener('change', () => {
+            const file = avatarInput.files?.[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                avatarPreview.innerHTML = `<img src="${reader.result}" alt="">`;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 });
