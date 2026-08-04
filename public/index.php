@@ -109,15 +109,49 @@ if ($path === '/my-work') {
 
 if ($path === '/projects') {
     Permissions::requirePage('projects');
-    $projects = Project::all();
+    $showArchived = ($_GET['archived'] ?? '') === '1';
+    $projects = Project::all($showArchived);
     View::render('projects/index', [
         'title' => 'Projects',
         'projects' => $projects,
+        'showArchived' => $showArchived,
+        'archivedCount' => Project::archivedCount(),
         'projectFields' => ProjectFieldSetting::visible(),
         'customFields' => CustomField::visible(),
         'customValues' => CustomField::valuesForProjects(array_column($projects, 'id')),
     ]);
     exit;
+}
+
+if ($path === '/projects/archive' && is_post()) {
+    verify_csrf();
+    Permissions::requirePage('projects');
+    $projectId = (int) ($_POST['project_id'] ?? 0);
+    if ($projectId) {
+        Project::archive($projectId);
+    }
+    redirect('/projects');
+}
+
+if ($path === '/projects/unarchive' && is_post()) {
+    verify_csrf();
+    Permissions::requirePage('projects');
+    $projectId = (int) ($_POST['project_id'] ?? 0);
+    if ($projectId) {
+        Project::unarchive($projectId);
+    }
+    redirect('/projects?archived=1');
+}
+
+if ($path === '/projects/delete' && is_post()) {
+    verify_csrf();
+    Permissions::requirePage('projects');
+    $projectId = (int) ($_POST['project_id'] ?? 0);
+    $wasArchived = ($_POST['was_archived'] ?? '') === '1';
+    if ($projectId) {
+        Project::delete($projectId);
+    }
+    redirect($wasArchived ? '/projects?archived=1' : '/projects');
 }
 
 if ($path === '/projects/quick-update' && is_post()) {
@@ -1332,7 +1366,7 @@ if ($path === '/reports/export') {
     $rows = WorkLog::report($filters);
     $reportProjectName = trim((string) ($filters['project_group'] ?: ($rows[0]['project_group'] ?? '')));
     if ($reportProjectName !== '') {
-        foreach (Project::all() as $project) {
+        foreach (Project::all(null) as $project) {
             if ($reportProjectName === (string) $project['name'] || $reportProjectName === (string) $project['project_group']) {
                 $filters['export_project_name'] = $project['name'];
                 $filters['export_project_id'] = $project['code'] ?: '-';

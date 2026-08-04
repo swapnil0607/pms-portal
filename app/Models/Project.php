@@ -6,7 +6,8 @@ use App\Core\Database;
 
 class Project
 {
-    public static function all(): array
+    /** $archived: false = active only (default), true = archived only, null = both. */
+    public static function all(?bool $archived = false): array
     {
         $sql = "SELECT p.*, u.name AS owner_name, c.name AS client_name,
                        COUNT(DISTINCT t.id) AS task_count,
@@ -19,11 +20,36 @@ class Project
                 FROM projects p
                 JOIN users u ON u.id = p.owner_id
                 LEFT JOIN clients c ON c.id = p.client_id
-                LEFT JOIN tasks t ON t.project_id = p.id
-                GROUP BY p.id
-                ORDER BY p.updated_at DESC";
+                LEFT JOIN tasks t ON t.project_id = p.id";
+
+        if ($archived !== null) {
+            $sql .= ' WHERE p.archived_at IS ' . ($archived ? 'NOT NULL' : 'NULL');
+        }
+
+        $sql .= ' GROUP BY p.id ORDER BY p.updated_at DESC';
 
         return Database::connection()->query($sql)->fetchAll();
+    }
+
+    public static function archivedCount(): int
+    {
+        return (int) Database::connection()->query('SELECT COUNT(*) FROM projects WHERE archived_at IS NOT NULL')->fetchColumn();
+    }
+
+    public static function archive(int $id): void
+    {
+        Database::connection()->prepare('UPDATE projects SET archived_at = NOW() WHERE id = ?')->execute([$id]);
+    }
+
+    public static function unarchive(int $id): void
+    {
+        Database::connection()->prepare('UPDATE projects SET archived_at = NULL WHERE id = ?')->execute([$id]);
+    }
+
+    /** Hard delete - phases/task lists/tasks/comments/attachments/members cascade via FK. */
+    public static function delete(int $id): void
+    {
+        Database::connection()->prepare('DELETE FROM projects WHERE id = ?')->execute([$id]);
     }
 
     public static function find(int $id): ?array

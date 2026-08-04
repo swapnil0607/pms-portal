@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS projects (
   description TEXT NULL,
   owner_id INT UNSIGNED NOT NULL,
   status ENUM('planned','active','on_hold','completed','cancelled') NOT NULL DEFAULT 'planned',
+  archived_at TIMESTAMP NULL DEFAULT NULL,
   priority ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
   billed_learners INT UNSIGNED NULL,
   learners_on_platform INT UNSIGNED NULL,

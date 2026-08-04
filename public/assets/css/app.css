@@ -1644,7 +1644,7 @@ textarea {
 .client-project-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 12px;
     padding: 9px 12px;
     background: #fff;
@@ -1652,6 +1652,10 @@ textarea {
     border-radius: 6px;
     font-weight: 600;
     color: var(--primary-dark);
+}
+
+.client-project-item .status-pill {
+    margin-left: auto;
 }
 
 .client-project-item:hover {

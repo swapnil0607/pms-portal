@@ -22,11 +22,21 @@ $numericDateFields = [
     <?php endif; ?>
 </section>
 
+<nav class="tabs">
+    <a class="<?= !$showArchived ? 'active' : '' ?>" href="/projects">Active Projects</a>
+    <a class="<?= $showArchived ? 'active' : '' ?>" href="/projects?archived=1">Archived<?= $archivedCount ? ' (' . e((string) $archivedCount) . ')' : '' ?></a>
+</nav>
+
 <?php if (!$projects): ?>
     <div class="panel empty-state">
-        <h3>No projects created yet</h3>
-        <p>Start with one live or internal project and add tasks under it.</p>
-        <a class="btn" href="/projects/create">Create Project</a>
+        <?php if ($showArchived): ?>
+            <h3>No archived projects</h3>
+            <p>Projects you archive from the active list will show up here.</p>
+        <?php else: ?>
+            <h3>No projects created yet</h3>
+            <p>Start with one live or internal project and add tasks under it.</p>
+            <a class="btn" href="/projects/create">Create Project</a>
+        <?php endif; ?>
     </div>
 <?php else: ?>
     <div class="panel report-table-panel">
@@ -92,7 +102,37 @@ $numericDateFields = [
                                 <td><?= e($customValue !== '' ? (string) $customValue : '-') ?></td>
                             <?php endif; ?>
                         <?php endforeach; ?>
-                        <td><?php if ($canEditInline): ?><a class="btn tiny" href="/projects/edit?id=<?= e((string) $project['id']) ?>">Edit</a><?php endif; ?></td>
+                        <td>
+                            <?php if ($canEditInline): ?>
+                                <span class="row-tools">
+                                    <a class="btn tiny" href="/projects/edit?id=<?= e((string) $project['id']) ?>">Edit</a>
+                                    <details class="row-menu">
+                                        <summary aria-label="Project actions">...</summary>
+                                        <div class="row-menu-panel">
+                                            <?php if ($showArchived): ?>
+                                                <form method="post" action="/projects/unarchive">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="project_id" value="<?= e((string) $project['id']) ?>">
+                                                    <button type="submit">Unarchive</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <form method="post" action="/projects/archive">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="project_id" value="<?= e((string) $project['id']) ?>">
+                                                    <button type="submit">Archive</button>
+                                                </form>
+                                            <?php endif; ?>
+                                            <form method="post" action="/projects/delete" onsubmit="return confirm('Permanently delete &quot;<?= e(addslashes($project['name'])) ?>&quot; and all its phases, task lists, and tasks? This cannot be undone.')">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="project_id" value="<?= e((string) $project['id']) ?>">
+                                                <input type="hidden" name="was_archived" value="<?= $showArchived ? '1' : '0' ?>">
+                                                <button type="submit" class="danger-link">Delete</button>
+                                            </form>
+                                        </div>
+                                    </details>
+                                </span>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

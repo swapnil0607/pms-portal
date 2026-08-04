@@ -434,42 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSelection();
         });
 
-        document.querySelectorAll('.row-menu').forEach((menu) => {
-            menu.addEventListener('toggle', () => {
-                const panel = menu.querySelector('.row-menu-panel');
-                if (!panel) {
-                    return;
-                }
-
-                if (!menu.open) {
-                    panel.removeAttribute('style');
-                    return;
-                }
-
-                document.querySelectorAll('.row-menu[open]').forEach((otherMenu) => {
-                    if (otherMenu !== menu) {
-                        otherMenu.open = false;
-                    }
-                });
-
-                positionMenu(menu, panel);
-            });
-        });
-
-        document.addEventListener('pointerdown', (event) => {
-            const clickedInsideMenu = event.target.closest('.row-menu');
-            if (clickedInsideMenu) {
-                return;
-            }
-
-            document.querySelectorAll('.row-menu[open]').forEach((menu) => {
-                menu.open = false;
-            });
-        });
-
-        window.addEventListener('scroll', repositionOpenMenu, true);
-        window.addEventListener('resize', repositionOpenMenu);
-
         document.querySelectorAll('[data-collapse]').forEach((button) => {
             button.addEventListener('click', () => {
                 const row = button.closest('.hierarchy-row');
@@ -592,6 +556,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+    }
+
+    // Row-action dropdowns (<details class="row-menu">): works on any page,
+    // not just the project workspace - e.g. the Projects list's Archive/
+    // Delete menu reuses the exact same markup and behavior.
+    if (document.querySelector('.row-menu')) {
         function repositionOpenMenu() {
             const menu = document.querySelector('.row-menu[open]');
             const panel = menu?.querySelector('.row-menu-panel');
@@ -627,6 +597,42 @@ document.addEventListener('DOMContentLoaded', () => {
             panel.style.top = `${top}px`;
             panel.style.visibility = 'visible';
         }
+
+        document.querySelectorAll('.row-menu').forEach((menu) => {
+            menu.addEventListener('toggle', () => {
+                const panel = menu.querySelector('.row-menu-panel');
+                if (!panel) {
+                    return;
+                }
+
+                if (!menu.open) {
+                    panel.removeAttribute('style');
+                    return;
+                }
+
+                document.querySelectorAll('.row-menu[open]').forEach((otherMenu) => {
+                    if (otherMenu !== menu) {
+                        otherMenu.open = false;
+                    }
+                });
+
+                positionMenu(menu, panel);
+            });
+        });
+
+        document.addEventListener('pointerdown', (event) => {
+            const clickedInsideMenu = event.target.closest('.row-menu');
+            if (clickedInsideMenu) {
+                return;
+            }
+
+            document.querySelectorAll('.row-menu[open]').forEach((menu) => {
+                menu.open = false;
+            });
+        });
+
+        window.addEventListener('scroll', repositionOpenMenu, true);
+        window.addEventListener('resize', repositionOpenMenu);
     }
 
     // Generic expandable-row toggle: works for any table using the
