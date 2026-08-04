@@ -69,26 +69,14 @@ button:hover,
 
 .brand {
     display: flex;
-    gap: 12px;
     align-items: center;
     margin-bottom: 30px;
 }
 
-.brand-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    background: #29a3a3;
-    font-weight: 800;
-}
-
-.brand small {
+.brand-logo {
     display: block;
-    color: #aac0d2;
-    margin-top: 3px;
+    height: 40px;
+    width: auto;
 }
 
 .nav {

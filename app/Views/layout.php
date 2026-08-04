@@ -64,11 +64,9 @@ if ($currentPath === '/') {
     <div class="app-shell">
         <aside class="sidebar">
             <div class="brand">
-                <span class="brand-mark">EP</span>
-                <div>
-                    <strong>EduRiser PMS</strong>
-                    <small>Project Management</small>
-                </div>
+                <a href="/">
+                    <img src="<?= e(asset_url('/public/assets/img/eduriser-logo.svg')) ?>" alt="EduRiser" class="brand-logo">
+                </a>
             </div>
             <nav class="nav">
                 <a class="<?= $currentPath === '/' || str_starts_with($currentPath, '/my-work') ? 'active' : '' ?>" href="/">Home</a>
