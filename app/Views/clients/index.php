@@ -14,7 +14,7 @@
     </div>
 <?php else: ?>
     <div class="panel">
-        <table class="data-table clients-table">
+        <table class="data-table clients-table" data-client-dnd>
             <thead>
                 <tr>
                     <th class="toggle-col"></th>
@@ -30,7 +30,7 @@
                     $rowId = 'client-' . $client['id'];
                     $clientProjects = $projectsByClient[(int) $client['id']] ?? [];
                 ?>
-                <tr>
+                <tr class="client-row" data-client-id="<?= e((string) $client['id']) ?>">
                     <td class="toggle-col">
                         <?php if ($clientProjects): ?>
                             <button type="button" class="breakdown-toggle" data-breakdown-toggle data-target-parent="<?= e($rowId) ?>" aria-expanded="false">&#9656;</button>
@@ -47,7 +47,8 @@
                         <td colspan="4">
                             <div class="client-project-list">
                                 <?php foreach ($clientProjects as $project): ?>
-                                    <a class="client-project-item" href="/projects/show?id=<?= e((string) $project['id']) ?>">
+                                    <a class="client-project-item" draggable="true" data-project-id="<?= e((string) $project['id']) ?>" data-current-client-id="<?= e((string) $client['id']) ?>" href="/projects/show?id=<?= e((string) $project['id']) ?>">
+                                        <span>&#8942;&#8942;</span>
                                         <span><?= e($project['name']) ?></span>
                                         <span class="status-pill <?= e($project['status']) ?>"><?= e(str_replace('_', ' ', $project['status'])) ?></span>
                                     </a>
@@ -59,5 +60,6 @@
             <?php endforeach; ?>
             </tbody>
         </table>
+        <p class="muted client-dnd-hint">Drag a project onto a different client to move it there.</p>
     </div>
 <?php endif; ?>

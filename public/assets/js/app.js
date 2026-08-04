@@ -303,6 +303,72 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    document.querySelectorAll('[data-sortable-table]').forEach((table) => {
+        const headerRow = table.querySelector('thead tr');
+        const tbody = table.querySelector('tbody');
+        if (!headerRow || !tbody) {
+            return;
+        }
+        const headers = Array.from(headerRow.children);
+
+        // Prefer an inline editable-cell's raw data-value (e.g. "1500.5", not
+        // "1,500.50"); otherwise fall back to the cell's own text. Blank/"-"
+        // cells sort as null so they can always be pushed to the bottom.
+        const sortValueOf = (td) => {
+            const valueEl = td?.querySelector('[data-value]');
+            const raw = valueEl ? valueEl.dataset.value : (td?.textContent ?? '');
+            const text = raw.trim();
+            return text === '' || text === '-' ? null : text;
+        };
+
+        const compare = (a, b) => {
+            const na = parseFloat(a.replace(/,/g, ''));
+            const nb = parseFloat(b.replace(/,/g, ''));
+            if (!Number.isNaN(na) && !Number.isNaN(nb) && /^-?[\d,.]+%?$/.test(a) && /^-?[\d,.]+%?$/.test(b)) {
+                return na - nb;
+            }
+            if (/^\d{4}-\d{2}-\d{2}/.test(a) && /^\d{4}-\d{2}-\d{2}/.test(b)) {
+                const da = Date.parse(a);
+                const db = Date.parse(b);
+                if (!Number.isNaN(da) && !Number.isNaN(db)) {
+                    return da - db;
+                }
+            }
+            return a.localeCompare(b);
+        };
+
+        headers.forEach((th, index) => {
+            if (th.hasAttribute('data-no-sort')) {
+                return;
+            }
+            th.classList.add('sortable-col');
+            th.addEventListener('click', () => {
+                const dir = th.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+                headers.forEach((h) => {
+                    delete h.dataset.sortDir;
+                    h.classList.remove('sorted-asc', 'sorted-desc');
+                });
+                th.dataset.sortDir = dir;
+                th.classList.add(dir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+                const rows = Array.from(tbody.children);
+                rows.sort((rowA, rowB) => {
+                    const va = sortValueOf(rowA.children[index]);
+                    const vb = sortValueOf(rowB.children[index]);
+                    if (va === null || vb === null) {
+                        if (va === vb) {
+                            return 0;
+                        }
+                        return va === null ? 1 : -1;
+                    }
+                    const cmp = compare(va, vb);
+                    return dir === 'asc' ? cmp : -cmp;
+                });
+                rows.forEach((row) => tbody.appendChild(row));
+            });
+        });
+    });
+
     document.querySelectorAll('[data-role-select]').forEach((select) => {
         let defaults = {};
         try {
@@ -605,6 +671,70 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
+
+    const clientDndTable = document.querySelector('[data-client-dnd]');
+    if (clientDndTable) {
+        let draggedProject = null;
+        let activeDropRow = null;
+
+        const clearClientDropTarget = () => {
+            if (activeDropRow) {
+                activeDropRow.classList.remove('drop-target');
+                activeDropRow = null;
+            }
+        };
+
+        clientDndTable.addEventListener('dragstart', (event) => {
+            const item = event.target.closest('.client-project-item[draggable="true"]');
+            if (!item) {
+                return;
+            }
+            draggedProject = item;
+            item.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', item.dataset.projectId || '');
+        });
+
+        clientDndTable.addEventListener('dragend', () => {
+            if (draggedProject) {
+                draggedProject.classList.remove('dragging');
+            }
+            clearClientDropTarget();
+            draggedProject = null;
+        });
+
+        clientDndTable.addEventListener('dragover', (event) => {
+            if (!draggedProject) {
+                return;
+            }
+            const row = event.target.closest('.client-row');
+            if (!row || row.dataset.clientId === draggedProject.dataset.currentClientId) {
+                return;
+            }
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            if (activeDropRow !== row) {
+                clearClientDropTarget();
+                activeDropRow = row;
+                row.classList.add('drop-target');
+            }
+        });
+
+        clientDndTable.addEventListener('drop', async (event) => {
+            const row = event.target.closest('.client-row');
+            if (!row || !draggedProject || row.dataset.clientId === draggedProject.dataset.currentClientId) {
+                return;
+            }
+            event.preventDefault();
+            clearClientDropTarget();
+
+            await postMove('/clients/reassign-project', {
+                project_id: draggedProject.dataset.projectId,
+                client_id: row.dataset.clientId,
+            });
+            window.location.reload();
+        });
+    }
 
     const kanbanBoard = document.querySelector('[data-kanban-board]');
     if (kanbanBoard) {

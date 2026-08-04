@@ -129,6 +129,19 @@ class Project
         return $data;
     }
 
+    /** Moves a project to a different client (drag-and-drop on the Clients page), keeping project_group in sync like a normal edit would. */
+    public static function reassignClient(int $projectId, int $clientId): bool
+    {
+        $client = Client::find($clientId);
+        if (!$client) {
+            return false;
+        }
+
+        $stmt = Database::connection()->prepare('UPDATE projects SET client_id = ?, project_group = ? WHERE id = ?');
+        $stmt->execute([$clientId, $client['name'], $projectId]);
+        return true;
+    }
+
     public static function members(int $projectId): array
     {
         $stmt = Database::connection()->prepare(

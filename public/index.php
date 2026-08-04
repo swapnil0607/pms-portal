@@ -393,6 +393,18 @@ if ($path === '/clients/edit') {
     exit;
 }
 
+if ($path === '/clients/reassign-project' && is_post()) {
+    verify_csrf();
+    Permissions::requirePage('clients');
+    $projectId = (int) ($_POST['project_id'] ?? 0);
+    $clientId = (int) ($_POST['client_id'] ?? 0);
+    $moved = $projectId && $clientId ? Project::reassignClient($projectId, $clientId) : false;
+
+    header('Content-Type: application/json');
+    echo json_encode(['ok' => $moved]);
+    exit;
+}
+
 if ($path === '/projects/create') {
     Permissions::requirePage('projects');
     $users = User::allActive();

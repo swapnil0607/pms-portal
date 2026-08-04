@@ -31,16 +31,16 @@ $numericDateFields = [
 <?php else: ?>
     <div class="panel report-table-panel">
         <div class="wide-table-wrap">
-            <table class="data-table projects-table">
+            <table class="data-table projects-table" data-sortable-table>
                 <thead>
                     <tr>
                         <?php foreach ($projectFields as $field): ?>
-                            <th><?= e($field['label']) ?></th>
+                            <th data-sort-key="<?= e($field['key']) ?>"><?= e($field['label']) ?></th>
                         <?php endforeach; ?>
                         <?php foreach ($customFields as $field): ?>
-                            <th><?= e($field['label']) ?></th>
+                            <th data-sort-key="custom-<?= e($field['field_key']) ?>"><?= e($field['label']) ?></th>
                         <?php endforeach; ?>
-                        <th>Action</th>
+                        <th data-no-sort>Action</th>
                     </tr>
                 </thead>
                 <tbody>
