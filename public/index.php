@@ -85,6 +85,35 @@ if ($path === '/logout') {
     redirect('/login');
 }
 
+// SSO entry point: the Central Management System (already authenticated via
+// Azure AD on its side) posts here with `email` (+ `sso_token`, a shared
+// secret) instead of sending someone through the normal password form. No
+// CSRF check here on purpose — the request originates from the CMS, not a
+// form this app rendered, so there's no session-bound token to compare
+// against; the shared secret is what stands in for it.
+if ($path === '/' && is_post() && isset($_POST['email'])) {
+    $ssoSecret = trim((string) config('app.sso_secret', ''));
+    $providedToken = (string) ($_POST['sso_token'] ?? '');
+    $ssoError = null;
+
+    if ($ssoSecret === '' || !hash_equals($ssoSecret, $providedToken)) {
+        $ssoError = 'SSO sign-in could not be verified. Please log in below.';
+    } else {
+        $ssoEmail = trim((string) $_POST['email']);
+        $ssoUser = $ssoEmail !== '' ? User::findByEmail($ssoEmail) : null;
+
+        if (!$ssoUser || $ssoUser['status'] !== 'active') {
+            $ssoError = 'No active PMS account found for that email. Please log in below or contact your administrator.';
+        } else {
+            Auth::loginAs($ssoUser);
+            redirect('/');
+        }
+    }
+
+    View::render('login', ['title' => 'Login', 'error' => $ssoError], 'auth_layout');
+    exit;
+}
+
 Auth::requireLogin();
 
 if ($path === '/') {
