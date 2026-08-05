@@ -58,25 +58,45 @@ function time_range_from_post(): array
     return [$label, $hours];
 }
 
-if ($path === '/login') {
+// The Central Management System's SSO form posts straight to the app root
+// (https://eduriserck.com/pms/index.php, which normalizes to '/' below) -
+// handle it wherever it lands, using the same POST-based-SSO logic as the
+// dedicated /login route.
+if ($path === '/login' || ($path === '/' && is_post() && isset($_POST['email']))) {
     if (Auth::check()) {
         redirect('/');
     }
 
     $error = null;
+    $prefillEmail = '';
+
     if (is_post()) {
-        verify_csrf();
-        $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+        $password = (string) ($_POST['password'] ?? '');
 
-        if (Auth::attempt($email, $password)) {
-            redirect('/');
+        if ($email !== '' && $password === '') {
+            // POST-based SSO from the master app: no password field at all,
+            // so there's no session-bound form to CSRF-check against - the
+            // email-present/password-blank shape is what stands in for it.
+            if (Auth::ssoLogin($email)) {
+                redirect('/');
+            }
+
+            $prefillEmail = $email;
+            $error = 'No active user was found for this SSO email.';
+        } else {
+            verify_csrf();
+
+            if (Auth::attempt($email, $password)) {
+                redirect('/');
+            }
+
+            $prefillEmail = $email;
+            $error = 'Invalid email or password.';
         }
-
-        $error = 'Invalid email or password.';
     }
 
-    View::render('login', ['title' => 'Login', 'error' => $error], 'auth_layout');
+    View::render('login', ['title' => 'Login', 'error' => $error, 'prefillEmail' => $prefillEmail], 'auth_layout');
     exit;
 }
 

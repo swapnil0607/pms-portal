@@ -13,7 +13,7 @@
         <?php endif; ?>
         <label>
             Email
-            <input type="text" name="email" value="admin@eduriser.in" inputmode="email" required>
+            <input type="text" name="email" value="<?= e($prefillEmail !== '' ? $prefillEmail : 'admin@eduriser.in') ?>" inputmode="email" required>
         </label>
         <label>
             Password
