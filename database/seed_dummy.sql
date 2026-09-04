@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- PMS Demo Seeds (All passwords: Demo@2026!)
 -- ==============================================================================
 
@@ -11,7 +11,10 @@ INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `role`, `permission
 (2, 'Sarah Jenkins', 'pm@demo.com', '$2y$10$T3rGt8ReaE4v5tneu9mOduWR/HCYOIW75pa8JxMeQTIGo4B6LYGP.', 'manager', '{"projects.manage":true,"tasks.manage":true}', 'Senior Project Manager', 'Delivery', 'active'),
 (3, 'Elena Vance', 'designer@demo.com', '$2y$10$T3rGt8ReaE4v5tneu9mOduWR/HCYOIW75pa8JxMeQTIGo4B6LYGP.', 'member', '{"tasks.update":true}', 'Lead UI/UX Designer', 'Product Design', 'active'),
 (4, 'Marcus Chen', 'dev@demo.com', '$2y$10$T3rGt8ReaE4v5tneu9mOduWR/HCYOIW75pa8JxMeQTIGo4B6LYGP.', 'member', '{"tasks.update":true}', 'Staff Frontend Engineer', 'Engineering', 'active'),
-(5, 'Priya Sharma', 'priya@demo.com', '$2y$10$T3rGt8ReaE4v5tneu9mOduWR/HCYOIW75pa8JxMeQTIGo4B6LYGP.', 'member', '{"tasks.update":true}', 'Product Strategist', 'Product', 'active');
+(5, 'Priya Sharma', 'priya@demo.com', '$2y$10$T3rGt8ReaE4v5tneu9mOduWR/HCYOIW75pa8JxMeQTIGo4B6LYGP.', 'member', '{"tasks.update":true}', 'Product Strategist', 'Product', 'active'),
+(6, 'Super Admin', 'admin@pms.demo', '$2y$10$T3rGt8ReaE4v5tneu9mOduWR/HCYOIW75pa8JxMeQTIGo4B6LYGP.', 'admin', '*', 'Principal Design Lead & Admin', 'Design & Technology', 'active'),
+(7, 'Project Manager', 'pm@pms.demo', '$2y$10$T3rGt8ReaE4v5tneu9mOduWR/HCYOIW75pa8JxMeQTIGo4B6LYGP.', 'manager', '{"projects.manage":true,"tasks.manage":true}', 'Senior Project Manager', 'Delivery', 'active'),
+(8, 'Lead Developer', 'dev@pms.demo', '$2y$10$T3rGt8ReaE4v5tneu9mOduWR/HCYOIW75pa8JxMeQTIGo4B6LYGP.', 'member', '{"tasks.update":true}', 'Staff Frontend Engineer', 'Engineering', 'active');
 
 -- 2. Clients
 INSERT INTO `clients` (`id`, `name`, `notes`, `status`) VALUES
