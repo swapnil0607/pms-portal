@@ -14,7 +14,7 @@
         <div class="alert error span-2"><?= e($error) ?></div>
     <?php endif; ?>
     <label>
-        Client Name
+        Project Name
         <input type="text" name="project_group" value="<?= e($log['project_group']) ?>" data-autosuggest="clients" autocomplete="off" required>
     </label>
     <label>
@@ -25,17 +25,13 @@
         Module Number & Name
         <input type="text" name="module_name" value="<?= e($log['module_name']) ?>" data-autosuggest="taskLists" autocomplete="off" required>
     </label>
-    <label>
-        Task Category
-        <select name="task_category" required>
-            <?php foreach ($categories as $code => $label): ?>
-                <option value="<?= e($code) ?>" <?= $log['task_category'] === $code ? 'selected' : '' ?>><?= e($label) ?></option>
-            <?php endforeach; ?>
-        </select>
-    </label>
+    <!-- Task Category dropped from the UI, but the column is still required
+         downstream, so keep this log's existing value untouched - editing
+         a log for an unrelated reason should never silently recategorize it. -->
+    <input type="hidden" name="task_category" value="<?= e($log['task_category']) ?>">
     <label>
         Date
-        <input type="date" name="log_date" value="<?= e($log['log_date']) ?>" required>
+        <input type="date" name="log_date" value="<?= e($log['log_date']) ?>" max="<?= e(date('Y-m-d')) ?>" required>
     </label>
     <label>
         Time Logged (optional, recalculates hours if both set)

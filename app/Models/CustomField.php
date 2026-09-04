@@ -65,6 +65,15 @@ class CustomField
         Database::connection()->prepare('DELETE FROM custom_field_definitions WHERE id = ?')->execute([$id]);
     }
 
+    public static function updateSortOrders(array $orderedIds): void
+    {
+        $db = Database::connection();
+        $stmt = $db->prepare('UPDATE custom_field_definitions SET sort_order = ? WHERE id = ?');
+        foreach ($orderedIds as $index => $id) {
+            $stmt->execute([$index + 1, (int) $id]);
+        }
+    }
+
     /** [field_key => value] for one project, across every defined field. */
     public static function valuesForProject(int $projectId): array
     {

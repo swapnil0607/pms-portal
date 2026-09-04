@@ -67,7 +67,7 @@ class Project
 
     /** Numeric/date columns editable via the Projects list's click-to-edit cells. */
     private const QUICK_UPDATE_INT_FIELDS = ['billed_learners', 'learners_on_platform', 'learners_connected', 'started_with_courses'];
-    private const QUICK_UPDATE_DECIMAL_FIELDS = ['total_time', 'average_time_per_learner', 'adoption_percent'];
+    private const QUICK_UPDATE_DECIMAL_FIELDS = ['total_time', 'average_time_per_learner', 'adoption_percent', 'build_hours', 'run_hours'];
     private const QUICK_UPDATE_DATE_FIELDS = ['start_date', 'due_date'];
 
     public static function quickUpdate(int $projectId, string $field, ?string $value): void
@@ -92,16 +92,105 @@ class Project
         $stmt->execute([$bound, $projectId]);
     }
 
+    public static function isInternal(array $project): bool
+    {
+        if (!empty($project['is_internal'])) {
+            return true;
+        }
+        $name = strtolower(trim((string) ($project['name'] ?? $project['project_name'] ?? '')));
+        $client = strtolower(trim((string) ($project['client_name'] ?? $project['project_group'] ?? '')));
+        if (str_contains($client, 'internal') || str_contains($name, 'internal')) {
+            return true;
+        }
+        $knownInternal = [
+            'presales',
+            'self learning & research',
+            'self learning',
+            'marquee day',
+            'non-clients meeting',
+            'non-client meeting',
+            'internal meetings',
+            'internal training',
+        ];
+        foreach ($knownInternal as $term) {
+            if ($name === $term || str_starts_with($name, $term)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static function ensureServiceHoursColumnsExist(): void
+    {
+        static $ensured = false;
+        if ($ensured) {
+            return;
+        }
+        try {
+            $db = Database::connection();
+            $cols = $db->query("SHOW COLUMNS FROM projects")->fetchAll(\PDO::FETCH_COLUMN);
+            if (!in_array('build_hours', $cols, true)) {
+                $db->exec("ALTER TABLE projects ADD COLUMN build_hours DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER adoption_percent");
+            }
+            if (!in_array('run_hours', $cols, true)) {
+                $db->exec("ALTER TABLE projects ADD COLUMN run_hours DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER build_hours");
+            }
+            if (!in_array('is_open_po', $cols, true)) {
+                $db->exec("ALTER TABLE projects ADD COLUMN is_open_po TINYINT(1) NOT NULL DEFAULT 0 AFTER run_hours");
+            }
+            if (!in_array('is_internal', $cols, true)) {
+                $db->exec("ALTER TABLE projects ADD COLUMN is_internal TINYINT(1) NOT NULL DEFAULT 0 AFTER is_open_po");
+            }
+            $ensured = true;
+        } catch (\Throwable $e) {
+            // Ignored if user lacks ALTER privileges
+        }
+    }
+
+    public static function updateServiceHours(int $projectId, float $buildHours, float $runHours, bool $isOpenPo = false, bool $isInternal = false): void
+    {
+        self::ensureServiceHoursColumnsExist();
+        try {
+            $stmt = Database::connection()->prepare(
+                'UPDATE projects SET build_hours = ?, run_hours = ?, is_open_po = ?, is_internal = ? WHERE id = ?'
+            );
+            $stmt->execute([max(0, $buildHours), max(0, $runHours), $isOpenPo ? 1 : 0, $isInternal ? 1 : 0, $projectId]);
+        } catch (\Throwable $e) {
+            $stmt = Database::connection()->prepare(
+                'UPDATE projects SET build_hours = ?, run_hours = ?, is_open_po = ? WHERE id = ?'
+            );
+            $stmt->execute([max(0, $buildHours), max(0, $runHours), $isOpenPo ? 1 : 0, $projectId]);
+        }
+    }
+
     public static function create(array $data): int
     {
+        self::ensureServiceHoursColumnsExist();
         $data = self::resolveClientGroup($data);
-        $stmt = Database::connection()->prepare(
-            'INSERT INTO projects
-                (name, code, client_id, project_group, color, description, owner_id, status, priority, billed_learners, learners_on_platform, learners_connected, started_with_courses, total_time, average_time_per_learner, adoption_percent, start_date, due_date)
-             VALUES
-                (:name, :code, :client_id, :project_group, :color, :description, :owner_id, :status, :priority, :billed_learners, :learners_on_platform, :learners_connected, :started_with_courses, :total_time, :average_time_per_learner, :adoption_percent, :start_date, :due_date)'
-        );
-        $stmt->execute($data);
+        $data['build_hours'] = isset($data['build_hours']) ? max(0, (float) $data['build_hours']) : 0.00;
+        $data['run_hours'] = isset($data['run_hours']) ? max(0, (float) $data['run_hours']) : 0.00;
+        $data['is_open_po'] = !empty($data['is_open_po']) ? 1 : 0;
+        $data['is_internal'] = !empty($data['is_internal']) ? 1 : 0;
+
+        try {
+            $stmt = Database::connection()->prepare(
+                'INSERT INTO projects
+                    (name, code, client_id, project_group, color, description, owner_id, status, priority, billed_learners, learners_on_platform, learners_connected, started_with_courses, total_time, average_time_per_learner, adoption_percent, build_hours, run_hours, is_open_po, is_internal, start_date, due_date)
+                 VALUES
+                    (:name, :code, :client_id, :project_group, :color, :description, :owner_id, :status, :priority, :billed_learners, :learners_on_platform, :learners_connected, :started_with_courses, :total_time, :average_time_per_learner, :adoption_percent, :build_hours, :run_hours, :is_open_po, :is_internal, :start_date, :due_date)'
+            );
+            $stmt->execute($data);
+        } catch (\Throwable $e) {
+            unset($data['build_hours'], $data['run_hours'], $data['is_open_po'], $data['is_internal']);
+            $stmt = Database::connection()->prepare(
+                'INSERT INTO projects
+                    (name, code, client_id, project_group, color, description, owner_id, status, priority, billed_learners, learners_on_platform, learners_connected, started_with_courses, total_time, average_time_per_learner, adoption_percent, start_date, due_date)
+                 VALUES
+                    (:name, :code, :client_id, :project_group, :color, :description, :owner_id, :status, :priority, :billed_learners, :learners_on_platform, :learners_connected, :started_with_courses, :total_time, :average_time_per_learner, :adoption_percent, :start_date, :due_date)'
+            );
+            $stmt->execute($data);
+        }
+
         $projectId = (int) Database::connection()->lastInsertId();
         self::addMember($projectId, (int) $data['owner_id'], 'owner');
         return $projectId;
@@ -109,31 +198,69 @@ class Project
 
     public static function update(int $id, array $data): void
     {
+        self::ensureServiceHoursColumnsExist();
         $data = self::resolveClientGroup($data);
-        $stmt = Database::connection()->prepare(
-            'UPDATE projects
-             SET name = :name,
-                 code = :code,
-                 client_id = :client_id,
-                 project_group = :project_group,
-                 color = :color,
-                 description = :description,
-                 owner_id = :owner_id,
-                 status = :status,
-                 priority = :priority,
-                 billed_learners = :billed_learners,
-                 learners_on_platform = :learners_on_platform,
-                 learners_connected = :learners_connected,
-                 started_with_courses = :started_with_courses,
-                 total_time = :total_time,
-                 average_time_per_learner = :average_time_per_learner,
-                 adoption_percent = :adoption_percent,
-                 start_date = :start_date,
-                 due_date = :due_date
-             WHERE id = :id'
-        );
-        $data['id'] = $id;
-        $stmt->execute($data);
+        $data['build_hours'] = isset($data['build_hours']) ? max(0, (float) $data['build_hours']) : 0.00;
+        $data['run_hours'] = isset($data['run_hours']) ? max(0, (float) $data['run_hours']) : 0.00;
+        $data['is_open_po'] = !empty($data['is_open_po']) ? 1 : 0;
+        $data['is_internal'] = !empty($data['is_internal']) ? 1 : 0;
+
+        try {
+            $stmt = Database::connection()->prepare(
+                'UPDATE projects
+                 SET name = :name,
+                     code = :code,
+                     client_id = :client_id,
+                     project_group = :project_group,
+                     color = :color,
+                     description = :description,
+                     owner_id = :owner_id,
+                     status = :status,
+                     priority = :priority,
+                     billed_learners = :billed_learners,
+                     learners_on_platform = :learners_on_platform,
+                     learners_connected = :learners_connected,
+                     started_with_courses = :started_with_courses,
+                     total_time = :total_time,
+                     average_time_per_learner = :average_time_per_learner,
+                     adoption_percent = :adoption_percent,
+                     build_hours = :build_hours,
+                     run_hours = :run_hours,
+                     is_open_po = :is_open_po,
+                     is_internal = :is_internal,
+                     start_date = :start_date,
+                     due_date = :due_date
+                 WHERE id = :id'
+            );
+            $data['id'] = $id;
+            $stmt->execute($data);
+        } catch (\Throwable $e) {
+            unset($data['build_hours'], $data['run_hours'], $data['is_open_po'], $data['is_internal']);
+            $stmt = Database::connection()->prepare(
+                'UPDATE projects
+                 SET name = :name,
+                     code = :code,
+                     client_id = :client_id,
+                     project_group = :project_group,
+                     color = :color,
+                     description = :description,
+                     owner_id = :owner_id,
+                     status = :status,
+                     priority = :priority,
+                     billed_learners = :billed_learners,
+                     learners_on_platform = :learners_on_platform,
+                     learners_connected = :learners_connected,
+                     started_with_courses = :started_with_courses,
+                     total_time = :total_time,
+                     average_time_per_learner = :average_time_per_learner,
+                     adoption_percent = :adoption_percent,
+                     start_date = :start_date,
+                     due_date = :due_date
+                 WHERE id = :id'
+            );
+            $data['id'] = $id;
+            $stmt->execute($data);
+        }
     }
 
     /**
@@ -251,6 +378,11 @@ class Project
             'UPDATE task_lists SET phase_id = ? WHERE id = ? AND project_id = ?'
         );
         $stmt->execute([$phaseId, $taskListId, $projectId]);
+
+        // Cascade update phase_id to all tasks under this task list
+        Database::connection()->prepare(
+            'UPDATE tasks SET phase_id = ? WHERE task_list_id = ? AND project_id = ?'
+        )->execute([$phaseId, $taskListId, $projectId]);
 
         $listStmt = Database::connection()->prepare(
             'SELECT id FROM task_lists WHERE project_id = ? AND (phase_id <=> ?) ORDER BY sort_order, id'

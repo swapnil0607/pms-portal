@@ -1,5 +1,5 @@
 <?php
-$isViewer = \App\Core\Permissions::isViewer();
+$isViewer = !\App\Core\Permissions::canWrite();
 $formatTaskLogHours = static function (float $hours, ?string $dailyLog = null): string {
     if ($dailyLog !== null && trim($dailyLog) !== '') {
         return $dailyLog;
@@ -12,11 +12,20 @@ $formatTaskLogHours = static function (float $hours, ?string $dailyLog = null): 
 
 <section class="project-hero task-hero">
     <div>
-        <a class="back-link" href="/projects/show?id=<?= e((string) $task['project_id']) ?>"><?= e($task['project_name']) ?></a>
+        <div class="task-breadcrumb" style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #64748b; margin-bottom: 6px; flex-wrap: wrap;">
+            <a class="back-link" href="/projects/show?id=<?= e((string) $task['project_id']) ?>" style="margin-bottom: 0;"><?= e($task['project_name']) ?></a>
+            <?php if (!empty($task['phase_name'])): ?>
+                <span>&rsaquo;</span>
+                <span><?= e($task['phase_name']) ?></span>
+            <?php endif; ?>
+            <span>&rsaquo;</span>
+            <strong style="color: #0f172a;">📁 <?= e($task['task_list_name'] ?: 'General') ?></strong>
+        </div>
         <h2><?= e($task['title']) ?></h2>
         <p><?= e($task['description'] ?: 'No description added yet.') ?></p>
     </div>
     <div class="project-meta">
+        <span class="badge" style="background:#f1f5f9; color:#334155;" title="Task List">📁 <?= e($task['task_list_name'] ?: 'General') ?></span>
         <span class="badge"><?= e($labels[$task['status']] ?? $task['status']) ?></span>
         <span>Assignee: <?= e($task['assignee'] ?: 'Unassigned') ?></span>
         <span>Due: <?= e($task['due_date'] ?: '-') ?></span>
@@ -34,17 +43,31 @@ $formatTaskLogHours = static function (float $hours, ?string $dailyLog = null): 
             Title
             <input type="text" name="title" value="<?= e($task['title']) ?>" required>
         </label>
-        <label>
-            Assignee
-            <select name="assigned_to">
-                <option value="">Unassigned</option>
-                <?php foreach ($users as $user): ?>
-                    <option value="<?= e((string) $user['id']) ?>" <?= (int) $task['assigned_to'] === (int) $user['id'] ? 'selected' : '' ?>>
-                        <?= e($user['name']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
+        <div class="span-2 assignee-field">
+            <span class="field-label">Assignees</span>
+            <div class="assignee-picker" data-assignee-picker>
+                <div class="assignee-chips" data-assignee-chips>
+                    <?php foreach ($users as $user): ?>
+                        <?php if (in_array((int) $user['id'], $taskAssigneeIds, true)): ?>
+                            <span class="assignee-chip" data-assignee-id="<?= e((string) $user['id']) ?>">
+                                <?= e($user['name']) ?>
+                                <input type="hidden" name="assignee_ids[]" value="<?= e((string) $user['id']) ?>">
+                                <button type="button" class="assignee-chip-remove" data-remove-assignee aria-label="Remove <?= e($user['name']) ?>">&times;</button>
+                            </span>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    <span class="assignee-empty" data-assignee-empty <?= $taskAssigneeIds ? 'hidden' : '' ?>>No people added yet.</span>
+                </div>
+                <div class="assignee-picker-controls">
+                    <select data-assignee-picker-select aria-label="Person to add">
+                        <option value="">Select a person to add</option>
+                        <?php foreach ($users as $user): ?>
+                            <option value="<?= e((string) $user['id']) ?>"><?= e($user['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+        </div>
         <div class="span-2 workload-preview" data-workload data-exclude-task-id="<?= e((string) $task['id']) ?>" hidden></div>
         <label>
             Status
@@ -104,11 +127,11 @@ $formatTaskLogHours = static function (float $hours, ?string $dailyLog = null): 
             </div>
             <div>
                 <dt>Created</dt>
-                <dd><?= e(date('d M Y, h:i A', strtotime($task['created_at']))) ?></dd>
+                <dd><?= e(format_db_datetime($task['created_at'])) ?></dd>
             </div>
             <div>
                 <dt>Updated</dt>
-                <dd><?= e(date('d M Y, h:i A', strtotime($task['updated_at']))) ?></dd>
+                <dd><?= e(format_db_datetime($task['updated_at'])) ?></dd>
             </div>
         </dl>
         <div class="progress task-progress">
@@ -164,7 +187,7 @@ $formatTaskLogHours = static function (float $hours, ?string $dailyLog = null): 
                             </span>
                         </td>
                         <td><input form="taskLogEntryForm" type="number" name="hours" min="0" step="0.25" data-hours-input placeholder="Hours" aria-label="Hours"></td>
-                        <td><input form="taskLogEntryForm" type="date" name="log_date" value="<?= e(date('Y-m-d')) ?>" required aria-label="Date"></td>
+                        <td><input form="taskLogEntryForm" type="date" name="log_date" value="<?= e(date('Y-m-d')) ?>" max="<?= e(date('Y-m-d')) ?>" required aria-label="Date"></td>
                         <td>
                             <select form="taskLogEntryForm" name="billing_type" aria-label="Billing type">
                                 <option value="Billable">Billable</option>

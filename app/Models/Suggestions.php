@@ -6,17 +6,32 @@ use App\Core\Database;
 
 /**
  * Distinct-value lookups powering <datalist> autocomplete on the freeform
- * client / phase / task-list text inputs used across work logs, reports,
+ * project / phase / task-list text inputs used across work logs, reports,
  * and project forms.
  */
 class Suggestions
 {
-    public static function clients(): array
+    public static function projectNames(): array
     {
         return self::distinctUnion([
-            'SELECT name AS value FROM clients WHERE name IS NOT NULL AND name <> \'\'',
-            'SELECT DISTINCT project_group AS value FROM projects WHERE project_group IS NOT NULL AND project_group <> \'\'',
+            'SELECT DISTINCT name AS value FROM projects WHERE name IS NOT NULL AND name <> \'\' AND archived_at IS NULL',
             'SELECT DISTINCT project_group AS value FROM work_logs WHERE project_group IS NOT NULL AND project_group <> \'\'',
+        ]);
+    }
+
+    /** Strictly real project names (no client or free-text history mixed in) - used where a field is dedicated to projects only, e.g. the Reports > Project Report search. */
+    public static function projectsOnly(): array
+    {
+        return self::distinctUnion([
+            'SELECT DISTINCT name AS value FROM projects WHERE name IS NOT NULL AND name <> \'\' AND archived_at IS NULL',
+        ]);
+    }
+
+    /** Strictly real client names - used where a field is dedicated to clients only, e.g. the Reports > Customer Report search. */
+    public static function clientNames(): array
+    {
+        return self::distinctUnion([
+            'SELECT DISTINCT name AS value FROM clients WHERE name IS NOT NULL AND name <> \'\'',
         ]);
     }
 
@@ -36,9 +51,24 @@ class Suggestions
         ]);
     }
 
+    /** Real active tasks for the cascading Daily Log task picker. */
+    public static function tasks(): array
+    {
+        return Database::connection()->query(
+            "SELECT t.id, t.title, p.name AS project, COALESCE(pp.name, 'No Phase') AS phase,
+                    COALESCE(tl.name, 'General') AS task_list
+             FROM tasks t
+             JOIN projects p ON p.id = t.project_id
+             LEFT JOIN project_phases pp ON pp.id = t.phase_id
+             LEFT JOIN task_lists tl ON tl.id = t.task_list_id
+             WHERE p.archived_at IS NULL
+             ORDER BY p.name, pp.sort_order, tl.sort_order, t.title"
+        )->fetchAll();
+    }
+
     /**
-     * Client -> Phase -> Module[] tree used to cascade-filter the Daily Log
-     * suggestion dropdowns (picking a client narrows the phase list, picking
+     * Project -> Phase -> Module[] tree used to cascade-filter the Daily Log
+     * suggestion dropdowns (picking a project narrows the phase list, picking
      * a phase narrows the module list). Built from both what's actually been
      * logged before (work_logs) and the structured project/phase/task-list
      * setup, so options exist even before the first log against them.
@@ -47,69 +77,82 @@ class Suggestions
     {
         $tree = [];
 
-        $ensurePhase = function (string $client, string $phase) use (&$tree): void {
-            $client = trim($client);
-            if ($client === '') {
+        $ensurePhase = function (string $project, string $phase) use (&$tree): void {
+            $project = trim($project);
+            if ($project === '') {
                 return;
             }
             $phase = trim($phase) ?: 'No Phase';
-            if (!isset($tree[$client])) {
-                $tree[$client] = [];
+            if (!isset($tree[$project])) {
+                $tree[$project] = [];
             }
-            if (!isset($tree[$client][$phase])) {
-                $tree[$client][$phase] = [];
+            if (!isset($tree[$project][$phase])) {
+                $tree[$project][$phase] = [];
             }
         };
 
-        $addModule = function (string $client, string $phase, string $module) use (&$tree, $ensurePhase): void {
-            $ensurePhase($client, $phase);
-            $client = trim($client);
+        $addModule = function (string $project, string $phase, string $module) use (&$tree, $ensurePhase): void {
+            $ensurePhase($project, $phase);
+            $project = trim($project);
             $phase = trim($phase) ?: 'No Phase';
             $module = trim($module);
-            if ($client === '' || $module === '' || in_array($module, $tree[$client][$phase], true)) {
+            if ($project === '' || $module === '' || in_array($module, $tree[$project][$phase], true)) {
                 return;
             }
-            $tree[$client][$phase][] = $module;
+            $tree[$project][$phase][] = $module;
         };
-
-        foreach (self::clients() as $client) {
-            if (!isset($tree[$client])) {
-                $tree[$client] = [];
-            }
-        }
 
         $db = Database::connection();
 
+        // Seed top-level keys from real, non-archived project names only, so
+        // stray historical free-text values logged before this field meant
+        // "project" (e.g. an old client name someone typed) can't introduce
+        // their own suggestion entry, and archived projects stop being
+        // offered for new logging once closed out.
         foreach ($db->query(
-            "SELECT DISTINCT project_group AS client, phase, module_name AS module
+            "SELECT DISTINCT name AS value FROM projects WHERE name IS NOT NULL AND name <> '' AND archived_at IS NULL"
+        )->fetchAll(\PDO::FETCH_COLUMN) as $project) {
+            $project = trim((string) $project);
+            if ($project !== '' && !isset($tree[$project])) {
+                $tree[$project] = [];
+            }
+        }
+
+        foreach ($db->query(
+            "SELECT DISTINCT project_group AS project, phase, module_name AS module
              FROM work_logs
              WHERE project_group IS NOT NULL AND project_group <> ''"
         )->fetchAll() as $row) {
-            $addModule((string) $row['client'], (string) $row['phase'], (string) $row['module']);
+            if (!isset($tree[(string) $row['project']])) {
+                continue;
+            }
+            $addModule((string) $row['project'], (string) $row['phase'], (string) $row['module']);
         }
 
         foreach ($db->query(
-            "SELECT COALESCE(NULLIF(p.project_group, ''), p.name) AS client, pp.name AS phase
+            "SELECT p.name AS project, pp.name AS phase
              FROM project_phases pp
-             JOIN projects p ON p.id = pp.project_id"
+             JOIN projects p ON p.id = pp.project_id
+             WHERE p.archived_at IS NULL"
         )->fetchAll() as $row) {
-            $ensurePhase((string) $row['client'], (string) $row['phase']);
+            $ensurePhase((string) $row['project'], (string) $row['phase']);
         }
 
         foreach ($db->query(
-            "SELECT COALESCE(NULLIF(p.project_group, ''), p.name) AS client, pp.name AS phase, tl.name AS module
+            "SELECT p.name AS project, pp.name AS phase, tl.name AS module
              FROM task_lists tl
              JOIN projects p ON p.id = tl.project_id
-             LEFT JOIN project_phases pp ON pp.id = tl.phase_id"
+             LEFT JOIN project_phases pp ON pp.id = tl.phase_id
+             WHERE p.archived_at IS NULL"
         )->fetchAll() as $row) {
-            $addModule((string) $row['client'], (string) ($row['phase'] ?? ''), (string) $row['module']);
+            $addModule((string) $row['project'], (string) ($row['phase'] ?? ''), (string) $row['module']);
         }
 
         ksort($tree);
-        foreach (array_keys($tree) as $client) {
-            ksort($tree[$client]);
-            foreach (array_keys($tree[$client]) as $phase) {
-                sort($tree[$client][$phase]);
+        foreach (array_keys($tree) as $project) {
+            ksort($tree[$project]);
+            foreach (array_keys($tree[$project]) as $phase) {
+                sort($tree[$project][$phase]);
             }
         }
 

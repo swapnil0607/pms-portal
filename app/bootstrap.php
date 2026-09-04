@@ -85,7 +85,32 @@ function asset_url(string $path): string
 {
     $filePath = __DIR__ . '/../' . ltrim($path, '/');
     $version = is_file($filePath) ? filemtime($filePath) : time();
-    return url($path) . '?v=' . $version;
+
+    // Keep implementation files under /public on disk, but serve browser
+    // assets through the stable /assets route defined in the root .htaccess.
+    // This avoids exposing /public in URLs and makes every layout resolve CSS,
+    // JavaScript, images and avatars through the same hosting-safe path.
+    $servedPath = '/' . ltrim($path, '/');
+    if (str_starts_with($servedPath, '/public/assets/')) {
+        $servedPath = '/assets/' . substr($servedPath, strlen('/public/assets/'));
+    }
+
+    return url($servedPath) . '?v=' . $version;
+}
+
+/** Format a database timestamp in standard readable format. */
+function format_db_datetime(?string $value, string $format = 'd M Y, h:i A'): string
+{
+    if (!$value || $value === '0000-00-00 00:00:00') {
+        return '-';
+    }
+
+    $timestamp = strtotime($value);
+    if ($timestamp === false) {
+        return $value;
+    }
+
+    return date($format, $timestamp);
 }
 
 function user_initials(string $name): string
@@ -113,6 +138,39 @@ function redirect(string $path): never
 {
     header('Location: ' . url($path));
     exit;
+}
+
+function redirect_back(string $fallback = '/'): never
+{
+    $referer = $_SERVER['HTTP_REFERER'] ?? '';
+    if ($referer !== '') {
+        $refererHost = parse_url($referer, PHP_URL_HOST);
+        $currentHost = parse_url($_SERVER['HTTP_HOST'] ?? '', PHP_URL_HOST) ?: ($_SERVER['HTTP_HOST'] ?? '');
+        if (!$refererHost || $refererHost === $currentHost) {
+            header('Location: ' . $referer);
+            exit;
+        }
+    }
+
+    redirect($fallback);
+}
+
+function flash_set(string $message, string $type = 'success'): void
+{
+    if ($type === 'error') {
+        $_SESSION['flash_error'] = $message;
+    } else {
+        $_SESSION['flash_success'] = $message;
+    }
+}
+
+function flash(string $arg1, string $arg2 = 'success'): void
+{
+    if (in_array($arg1, ['success', 'error', 'warning', 'info'], true)) {
+        flash_set($arg2, $arg1);
+    } else {
+        flash_set($arg1, $arg2);
+    }
 }
 
 function is_post(): bool

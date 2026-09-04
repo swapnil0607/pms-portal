@@ -67,6 +67,26 @@
         </select>
     </label>
 
+    <?php $userRights = \App\Core\Permissions::userRights($editUser); ?>
+    <div class="span-2">
+        <span class="field-label">Action Rights & Permissions</span>
+        <p class="muted field-hint">Controls whether this user can view, edit, or export data across their allowed pages.</p>
+        <div class="permission-grid">
+            <label class="checkbox-inline">
+                <input type="checkbox" name="rights[]" value="read" <?= in_array(\App\Core\Permissions::RIGHT_READ, $userRights, true) ? 'checked' : '' ?>>
+                <strong>Read</strong> &mdash; View records & pages
+            </label>
+            <label class="checkbox-inline">
+                <input type="checkbox" name="rights[]" value="write" <?= in_array(\App\Core\Permissions::RIGHT_WRITE, $userRights, true) ? 'checked' : '' ?>>
+                <strong>Write</strong> &mdash; Add, edit, or delete records & logs
+            </label>
+            <label class="checkbox-inline">
+                <input type="checkbox" name="rights[]" value="export" <?= in_array(\App\Core\Permissions::RIGHT_EXPORT, $userRights, true) ? 'checked' : '' ?>>
+                <strong>Export</strong> &mdash; Download Excel reports & statements
+            </label>
+        </div>
+    </div>
+
     <div class="span-2">
         <span class="field-label">Page Access</span>
         <p class="muted field-hint">What this person can see, independent of their role.</p>
@@ -86,6 +106,13 @@
             <p class="permission-note">Users and Settings access can only be granted by an Admin.</p>
         <?php endif; ?>
     </div>
+
+    <?php if ($isAdminEditor): ?>
+    <label class="checkbox-inline span-2">
+        <input type="checkbox" name="project_actions" value="1" <?= \App\Core\Permissions::userCanManageProjectActions($editUser) ? 'checked' : '' ?>>
+        Allow project actions (create, edit, archive, unarchive, and inline project updates)
+    </label>
+    <?php endif; ?>
 
     <div class="form-actions span-2">
         <button type="submit">Save Changes</button>

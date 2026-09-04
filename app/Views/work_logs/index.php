@@ -6,7 +6,7 @@
     <a class="btn" href="/reports">View Report</a>
 </section>
 
-<?php if (\App\Core\Permissions::isViewer()): ?>
+<?php if (!\App\Core\Permissions::canWrite()): ?>
 <div class="panel empty-state slim">
     <h3>Read-only account</h3>
     <p>Your role can view logs but not add new ones.</p>
@@ -15,9 +15,10 @@
 <?php require __DIR__ . '/../partials/suggestions.php'; ?>
 <form method="post" action="/work-logs/create" class="panel simple-log-form">
     <?= csrf_field() ?>
+    <input type="hidden" name="task_selection_required" value="1">
     <label>
-        Client Name
-        <input type="text" name="project_group" placeholder="Example: ABC School" data-autosuggest="clients" autocomplete="off" required>
+        Project Name
+        <input type="text" name="project_group" placeholder="Example: ABC School - LMS Rollout" data-autosuggest="clients" autocomplete="off" required>
     </label>
     <label>
         Project Phase
@@ -27,17 +28,15 @@
         Module Number & Name
         <input type="text" name="module_name" placeholder="Example: M01 - Student Admission" data-autosuggest="taskLists" autocomplete="off" required>
     </label>
-    <label>
-        Task Category
-        <select name="task_category" required>
-            <?php foreach ($categories as $code => $label): ?>
-                <option value="<?= e($code) ?>"><?= e($label) ?></option>
-            <?php endforeach; ?>
-        </select>
+    <label class="span-2">
+        Task
+        <input type="text" name="task_title" placeholder="Type to search and choose task…" data-task-autosuggest autocomplete="off" required>
+        <input type="hidden" name="task_id" data-task-id value="" required>
     </label>
+    <input type="hidden" name="task_category" value="DEV">
     <label>
         Date
-        <input type="date" name="log_date" value="<?= e(date('Y-m-d')) ?>" required>
+        <input type="date" name="log_date" value="<?= e(date('Y-m-d')) ?>" max="<?= e(date('Y-m-d')) ?>" required>
     </label>
     <label>
         Time Logged
@@ -93,7 +92,7 @@
                     <strong><?= e((string) $log['hours']) ?> hrs</strong>
                     <span><?= e($log['log_date']) ?></span>
                     <span><?= e($log['billing_type']) ?></span>
-                    <?php if (!\App\Core\Permissions::isViewer()): ?>
+                    <?php if (\App\Core\Permissions::canWrite()): ?>
                     <span class="row-actions">
                         <a href="/work-logs/edit?id=<?= e((string) $log['id']) ?>">Edit</a>
                         <form method="post" action="/work-logs/delete" onsubmit="return confirm('Delete this time log?')">

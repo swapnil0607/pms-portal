@@ -1,3 +1,30 @@
+# Environment & Secrets
+.env
+.env.*
+config/msg91.php
+*.local.php
+
+# Confidential Live Dumps & Client Timesheets
+database/*timesheet*.sql
+*.csv
+*.sql.bak
+eduriser_pms*.sql
+
+# Logs & Cache
+error_log
+public/error_log
+*.log
+
+# Migration Backups & Raw Exports
 migration/zoho-exports/
 migration/backups/
-public/assets/uploads/
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# User Uploads
+public/assets/uploads/*
+!public/assets/uploads/.gitkeep

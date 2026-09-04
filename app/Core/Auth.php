@@ -78,5 +78,20 @@ class Auth
         if (!self::check()) {
             redirect('/login');
         }
+
+        // Live real-time refresh of permissions, role, and active status
+        static $refreshed = false;
+        if (!$refreshed && !empty($_SESSION['user_id'])) {
+            $user = User::find((int) $_SESSION['user_id']);
+            if (!$user || $user['status'] !== 'active') {
+                self::logout();
+                redirect('/login');
+            }
+            $_SESSION['user_name'] = $user['name'];
+            $_SESSION['user_role'] = $user['role'];
+            $_SESSION['user_avatar'] = $user['avatar_path'] ?? null;
+            $_SESSION['user_pages'] = User::permissionsFor($user);
+            $refreshed = true;
+        }
     }
 }

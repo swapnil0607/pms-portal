@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS users (
   permissions TEXT NULL,
   designation VARCHAR(120) NULL,
   department VARCHAR(120) NULL,
-  avatar_path VARCHAR(255) NULL,
   status ENUM('active','inactive') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -38,7 +37,6 @@ CREATE TABLE IF NOT EXISTS projects (
   description TEXT NULL,
   owner_id INT UNSIGNED NOT NULL,
   status ENUM('planned','active','on_hold','completed','cancelled') NOT NULL DEFAULT 'planned',
-  archived_at TIMESTAMP NULL DEFAULT NULL,
   priority ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
   billed_learners INT UNSIGNED NULL,
   learners_on_platform INT UNSIGNED NULL,
@@ -47,6 +45,9 @@ CREATE TABLE IF NOT EXISTS projects (
   total_time DECIMAL(10,2) NULL,
   average_time_per_learner DECIMAL(8,2) NULL,
   adoption_percent DECIMAL(6,2) NULL,
+  build_hours DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  run_hours DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  is_open_po TINYINT(1) NOT NULL DEFAULT 0,
   start_date DATE NULL,
   due_date DATE NULL,
   progress TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -62,14 +63,14 @@ CREATE TABLE IF NOT EXISTS project_phases (
   name VARCHAR(160) NOT NULL,
   sort_order INT UNSIGNED NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_project_phases_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+  CONSTRAINT fk_phases_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS task_lists (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   project_id INT UNSIGNED NOT NULL,
   phase_id INT UNSIGNED NULL,
-  name VARCHAR(180) NOT NULL,
+  name VARCHAR(160) NOT NULL,
   sort_order INT UNSIGNED NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_task_lists_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
@@ -115,18 +116,15 @@ CREATE TABLE IF NOT EXISTS tasks (
   phase_id INT UNSIGNED NULL,
   task_list_id INT UNSIGNED NULL,
   parent_task_id INT UNSIGNED NULL,
-  task_code VARCHAR(40) NULL,
   title VARCHAR(220) NOT NULL,
   description TEXT NULL,
-  assigned_to INT UNSIGNED NULL,
-  status ENUM('open','in_progress','review','completed','blocked') NOT NULL DEFAULT 'open',
+  status ENUM('not_started','in_progress','under_review','completed','blocked') NOT NULL DEFAULT 'not_started',
   priority ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
-  start_date DATE NULL,
+  assigned_to INT UNSIGNED NULL,
+  created_by INT UNSIGNED NOT NULL,
   due_date DATE NULL,
   estimated_hours DECIMAL(7,2) NULL,
-  progress TINYINT UNSIGNED NOT NULL DEFAULT 0,
   sort_order INT UNSIGNED NOT NULL DEFAULT 0,
-  created_by INT UNSIGNED NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_tasks_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
@@ -173,6 +171,10 @@ CREATE TABLE IF NOT EXISTS work_logs (
   hours DECIMAL(6,2) NOT NULL,
   log_date DATE NOT NULL,
   billing_type ENUM('Billable','Non-Billable') NOT NULL DEFAULT 'Billable',
+  billing_status ENUM('unbilled', 'billed') NOT NULL DEFAULT 'unbilled',
+  invoice_reference VARCHAR(120) NULL,
+  billed_at TIMESTAMP NULL,
+  billed_by INT UNSIGNED NULL,
   user_id INT UNSIGNED NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -198,6 +200,48 @@ CREATE TABLE IF NOT EXISTS project_custom_field_values (
   UNIQUE KEY uq_project_field (project_id, field_definition_id),
   CONSTRAINT fk_pcfv_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
   CONSTRAINT fk_pcfv_field FOREIGN KEY (field_definition_id) REFERENCES custom_field_definitions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS client_batches (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  client_id INT UNSIGNED NOT NULL,
+  project_id INT UNSIGNED NOT NULL,
+  batch_name VARCHAR(180) NOT NULL,
+  region_department VARCHAR(180) NULL,
+  licence_count INT UNSIGNED NOT NULL DEFAULT 0,
+  creation_date DATE NOT NULL,
+  renewal_date DATE NOT NULL,
+  given_by VARCHAR(180) NULL,
+  notes TEXT NULL,
+  status ENUM('active', 'renewed', 'cancelled', 'archived') NOT NULL DEFAULT 'active',
+  created_by INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  archived_at TIMESTAMP NULL DEFAULT NULL,
+  is_extended TINYINT(1) NOT NULL DEFAULT 0,
+  extension_reason TEXT NULL,
+  CONSTRAINT fk_cb_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cb_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cb_creator FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS client_batch_history (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  batch_id INT UNSIGNED NOT NULL,
+  client_id INT UNSIGNED NOT NULL,
+  project_id INT UNSIGNED NOT NULL,
+  action_type ENUM('created', 'renewed', 'updated', 'extended', 'expired') NOT NULL DEFAULT 'renewed',
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  licence_count INT UNSIGNED NOT NULL DEFAULT 0,
+  given_by VARCHAR(180) NULL,
+  notes TEXT NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_cbh_batch FOREIGN KEY (batch_id) REFERENCES client_batches(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cbh_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cbh_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cbh_creator FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
 INSERT INTO users (name, email, password_hash, role, designation, department)

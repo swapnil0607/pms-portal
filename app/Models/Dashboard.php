@@ -16,9 +16,9 @@ class Dashboard
             'active_projects' => (int) $db->query("SELECT COUNT(*) FROM projects WHERE status = 'active'")->fetchColumn(),
             'open_tasks' => (int) $db->query("SELECT COUNT(*) FROM tasks WHERE status <> 'completed'")->fetchColumn(),
             'overdue_tasks' => (int) $db->query("SELECT COUNT(*) FROM tasks WHERE due_date < CURDATE() AND status <> 'completed'")->fetchColumn(),
-            'my_open_tasks' => self::single("SELECT COUNT(*) FROM tasks WHERE assigned_to = ? AND status <> 'completed'", [$userId]),
-            'my_overdue_tasks' => self::single("SELECT COUNT(*) FROM tasks WHERE assigned_to = ? AND due_date < CURDATE() AND status <> 'completed'", [$userId]),
-            'my_today_tasks' => self::single("SELECT COUNT(*) FROM tasks WHERE assigned_to = ? AND due_date = CURDATE() AND status <> 'completed'", [$userId]),
+            'my_open_tasks' => self::single("SELECT COUNT(*) FROM tasks WHERE EXISTS (SELECT 1 FROM task_assignees WHERE task_assignees.task_id = tasks.id AND task_assignees.user_id = ?) AND status <> 'completed'", [$userId]),
+            'my_overdue_tasks' => self::single("SELECT COUNT(*) FROM tasks WHERE EXISTS (SELECT 1 FROM task_assignees WHERE task_assignees.task_id = tasks.id AND task_assignees.user_id = ?) AND due_date < CURDATE() AND status <> 'completed'", [$userId]),
+            'my_today_tasks' => self::single("SELECT COUNT(*) FROM tasks WHERE EXISTS (SELECT 1 FROM task_assignees WHERE task_assignees.task_id = tasks.id AND task_assignees.user_id = ?) AND due_date = CURDATE() AND status <> 'completed'", [$userId]),
             'my_log_hours_today' => (float) self::single("SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE user_id = ? AND log_date = CURDATE()", [$userId]),
             'my_log_count_today' => self::single("SELECT COUNT(*) FROM work_logs WHERE user_id = ? AND log_date = CURDATE()", [$userId]),
         ];
@@ -43,7 +43,7 @@ class Dashboard
              FROM tasks t
              JOIN projects p ON p.id = t.project_id
              LEFT JOIN task_lists tl ON tl.id = t.task_list_id
-             WHERE t.assigned_to = ? AND t.status <> 'completed'
+             WHERE EXISTS (SELECT 1 FROM task_assignees WHERE task_assignees.task_id = t.id AND task_assignees.user_id = ?) AND t.status <> 'completed'
              ORDER BY t.due_date IS NULL, t.due_date, FIELD(t.priority, 'critical','high','medium','low')
              LIMIT 8"
         );

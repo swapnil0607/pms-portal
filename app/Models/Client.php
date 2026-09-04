@@ -19,9 +19,19 @@ class Client
 
     public static function allActive(): array
     {
-        return Database::connection()
-            ->query("SELECT * FROM clients WHERE status = 'active' ORDER BY name")
-            ->fetchAll();
+        try {
+            return Database::connection()
+                ->query("SELECT * FROM clients WHERE status = 'active' ORDER BY name")
+                ->fetchAll();
+        } catch (\Throwable $e) {
+            try {
+                return Database::connection()
+                    ->query("SELECT * FROM clients ORDER BY name")
+                    ->fetchAll();
+            } catch (\Throwable $e2) {
+                return [];
+            }
+        }
     }
 
     public static function find(int $id): ?array

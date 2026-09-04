@@ -17,8 +17,43 @@
     </article>
 </section>
 
+<section class="panel task-search-panel">
+    <div class="section-header compact">
+        <div>
+            <h2>Find a Task</h2>
+            <p>Search by title, or narrow down with filters.</p>
+        </div>
+        <button type="button" class="button-link secondary" id="task-search-filter-toggle" aria-expanded="false">Filters</button>
+    </div>
+    <div class="task-search-bar">
+        <input type="text" id="task-search-input" class="task-search-input" placeholder="Search tasks by title…" autocomplete="off">
+        <ul class="autosuggest-list task-search-results" id="task-search-results" hidden></ul>
+    </div>
+    <div class="task-search-filters" id="task-search-filters" hidden>
+        <label>
+            Client
+            <select id="task-filter-client"><option value="">All Clients</option></select>
+        </label>
+        <label>
+            Project
+            <select id="task-filter-project"><option value="">All Projects</option></select>
+        </label>
+        <label>
+            Phase
+            <select id="task-filter-phase"><option value="">All Phases</option></select>
+        </label>
+        <label>
+            Task List
+            <select id="task-filter-tasklist"><option value="">All Task Lists</option></select>
+        </label>
+    </div>
+</section>
+<script>
+    window.__pmsTaskFilters = <?= json_encode($taskFilterOptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+</script>
+
 <section class="home-workspace">
-    <?php if (\App\Core\Permissions::isViewer()): ?>
+    <?php if (!\App\Core\Permissions::canWrite()): ?>
     <div class="panel empty-state slim">
         <h3>Read-only account</h3>
         <p>Your role can view work but not log time. Contact an admin if this should change.</p>
@@ -28,6 +63,7 @@
     <form method="post" action="/work-logs/create" class="panel home-log-form">
         <?= csrf_field() ?>
         <input type="hidden" name="return_to" value="home">
+        <input type="hidden" name="task_selection_required" value="1">
         <div class="section-header compact">
             <div>
                 <h2>Add Daily Log</h2>
@@ -36,25 +72,23 @@
         </div>
         <div class="compact-form-grid">
             <label>
-                Client Name
-                <input type="text" name="project_group" placeholder="Example: Jindal Stainless" data-autosuggest="clients" autocomplete="off" required>
+                Project Name
+                <input type="text" name="project_group" placeholder="Example: Jindal Stainless - LMS Rollout" data-autosuggest="clients" autocomplete="off" required>
             </label>
             <label>
                 Project Phase
                 <input type="text" name="phase" placeholder="Example: Phase 1" data-autosuggest="phases" autocomplete="off" required>
             </label>
-            <label>
+            <label class="span-2">
                 Module Number & Name
                 <input type="text" name="module_name" placeholder="Example: M01 - LMS Setup" data-autosuggest="taskLists" autocomplete="off" required>
             </label>
-            <label>
-                Task Category
-                <select name="task_category" required>
-                    <?php foreach ($categories as $code => $name): ?>
-                        <option value="<?= e($code) ?>"><?= e($code) ?> - <?= e($name) ?></option>
-                    <?php endforeach; ?>
-                </select>
+            <label class="span-2">
+                Task
+                <input type="text" name="task_title" placeholder="Type to search and choose task…" data-task-autosuggest autocomplete="off" required>
+                <input type="hidden" name="task_id" data-task-id value="" required>
             </label>
+            <input type="hidden" name="task_category" value="DEV">
             <label class="span-2">
                 Activity / Work Performed
                 <textarea name="notes" rows="3" placeholder="What work was done?" required></textarea>
@@ -73,7 +107,7 @@
             </label>
             <label>
                 Log Date
-                <input type="date" name="log_date" value="<?= e(date('Y-m-d')) ?>" required>
+                <input type="date" name="log_date" value="<?= e(date('Y-m-d')) ?>" max="<?= e(date('Y-m-d')) ?>" required>
             </label>
             <label>
                 Billing Type

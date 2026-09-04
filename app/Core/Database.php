@@ -30,6 +30,11 @@ class Database
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            try {
+                self::$connection->exec("SET time_zone = '+05:30'");
+            } catch (\Throwable $e) {
+                // Ignore if restricted
+            }
         } catch (PDOException $exception) {
             http_response_code(500);
             exit('Database connection failed. Please import database/schema.sql and check config/database.php.');

@@ -15,6 +15,8 @@ class TimesheetXlsxExporter
         'Hours(For Calculation)',
         'Date',
         'Billing Type',
+        'Billing Status',
+        'Invoice Reference',
         'User',
     ];
 
@@ -45,6 +47,31 @@ class TimesheetXlsxExporter
                 'numericColumns' => ['H'],
             ];
         }
+
+        return self::zip(self::workbookFiles($sheets));
+    }
+
+    public static function buildSimpleTable(string $sheetTitle, array $headers, array $dataRows, array $filters, array $exportedBy): string
+    {
+        $metaRows = [
+            ['ORGANIZATION NAME : ', 'EduRiser'],
+            ['REPORT TITLE : ', $sheetTitle],
+            ['EXPORTED BY : ', $exportedBy['name'] ?? 'System Admin'],
+            ['EXPORTED ON : ', date('d F Y h:i:s A')],
+            ['TIME PERIOD : ', self::displayPeriod($filters)],
+            [],
+        ];
+
+        $tableRows = array_merge($metaRows, [$headers], $dataRows);
+
+        $sheets = [
+            [
+                'name' => self::safeSheetName($sheetTitle),
+                'rows' => $tableRows,
+                'boldRows' => [1, 2, 3, 4, 5, 7],
+                'numericColumns' => ['E', 'F', 'G', 'H', 'I'],
+            ],
+        ];
 
         return self::zip(self::workbookFiles($sheets));
     }
@@ -84,6 +111,11 @@ class TimesheetXlsxExporter
         foreach ($rows as $row) {
             $hours = (float) ($row['hours'] ?? 0);
             $total += $hours;
+            $billingStatus = ($row['billing_status'] ?? 'unbilled') === 'billed' ? 'Billed' : 'Unbilled';
+            if (($row['billing_type'] ?? 'Billable') === 'Non-Billable') {
+                $billingStatus = 'Non-Billable';
+            }
+
             $sheetRows[] = [
                 $row['project_group'] ?? '',
                 $row['phase'] ?? '',
@@ -95,11 +127,13 @@ class TimesheetXlsxExporter
                 $hours,
                 self::displayDate($row['log_date'] ?? ''),
                 $row['billing_type'] ?? '',
+                $billingStatus,
+                $row['invoice_reference'] ?? '-',
                 $row['user_name'] ?? '',
             ];
         }
 
-        $sheetRows[] = ['', '', '', '', '', 'Total Hours', self::hoursToHhMm($total), $total, '', '', ''];
+        $sheetRows[] = ['', '', '', '', '', 'Total Hours', self::hoursToHhMm($total), $total, '', '', '', '', ''];
         return $sheetRows;
     }
 
