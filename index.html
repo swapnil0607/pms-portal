@@ -1,0 +1,1644 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>EduRiser PMS â€” Project Management &amp; Delivery System | Swapnil Gaonkar</title>
+  <meta name="description" content="Enterprise Project Management System with interactive Kanban board, multi-role telemetry, sprint milestones, and daily timesheet work logs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --primary-light: #14b8a6;
+      --primary-subtle: #f0fdfa;
+      --primary-border: #99f6e4;
+      --navy: #0f172a;
+      --sidebar-bg: #0f172a;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --info: #0284c7;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em;
+      padding-bottom: 70px;
+    }
+    @media (min-width: 992px) {
+      body { padding-bottom: 0; }
+    }
+
+    /* Top Bar */
+    .pms-topbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 1020;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 1.15rem;
+      box-shadow: 0 2px 6px rgba(15, 118, 110, 0.25);
+    }
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .brand-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Role switcher */
+    .role-switcher-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f1f5f9;
+      padding: 0.3rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .role-select {
+      background: transparent;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #0f172a;
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* App Shell */
+    .app-shell {
+      display: flex;
+      min-height: calc(100vh - 65px);
+    }
+    .app-sidebar {
+      width: 250px;
+      background: var(--sidebar-bg);
+      color: #f8fafc;
+      padding: 1.5rem 1rem;
+      flex-shrink: 0;
+      display: none;
+    }
+    @media (min-width: 992px) {
+      .app-sidebar { display: block; }
+    }
+    .app-content {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    @media (max-width: 768px) {
+      .app-content { padding: 1rem 0.75rem; }
+    }
+
+    /* Sidebar Navigation */
+    .nav-section-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      font-weight: 700;
+      margin: 1.25rem 0 0.5rem 0.75rem;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-btn:hover {
+      color: #ffffff;
+      background: rgba(255,255,255,0.06);
+    }
+    .nav-btn.active {
+      color: #ffffff;
+      background: var(--primary);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(15, 118, 110, 0.35);
+    }
+    .nav-btn svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* Mobile Bottom Navigation Bar */
+    .mobile-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 62px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 1030;
+      padding: 0 0.5rem;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    @media (min-width: 992px) {
+      .mobile-bottom-nav { display: none; }
+    }
+    .mobile-tab-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #64748b;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      gap: 3px;
+      border-radius: 8px;
+      transition: color 0.15s ease;
+      min-width: 60px;
+    }
+    .mobile-tab-btn.active {
+      color: var(--primary);
+    }
+    .mobile-tab-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Hub Banner Alert */
+    .hub-banner {
+      background: linear-gradient(90deg, #0f766e 0%, #0d9488 100%);
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hub-banner a {
+      color: #ffffff;
+      font-weight: 600;
+      text-decoration: underline;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Stat Cards */
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+    }
+    .stat-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stat-val {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.1;
+    }
+    .stat-sub {
+      font-size: 0.74rem;
+      color: #64748b;
+      margin-top: 0.25rem;
+    }
+
+    /* Section Panels */
+    .panel-box {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      margin-bottom: 1.5rem;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .panel-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .panel-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    /* Priority Badges */
+    .priority-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .priority-critical { background: #fee2e2; color: #dc2626; }
+    .priority-high { background: #ffedd5; color: #c2410c; }
+    .priority-medium { background: #e0f2fe; color: #0284c7; }
+    .priority-low { background: #f1f5f9; color: #475569; }
+
+    /* Kanban Board Styling */
+    .kanban-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(260px, 1fr));
+      gap: 1rem;
+      overflow-x: auto;
+      padding-bottom: 1rem;
+    }
+    @media (max-width: 991px) {
+      .kanban-grid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 0.75rem;
+      }
+      .kanban-col {
+        min-width: 82vw;
+        max-width: 85vw;
+        scroll-snap-align: center;
+      }
+    }
+    .kanban-col {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 480px;
+    }
+    .kanban-col-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding: 0.25rem 0.25rem 0.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .kanban-col-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #334155;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .kanban-col-count {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      color: #475569;
+    }
+    .kanban-cards-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      flex: 1;
+    }
+    .kanban-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+    }
+    .kanban-card:hover {
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+    }
+    .kanban-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.45rem;
+    }
+    .kanban-card-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #0f172a;
+      line-height: 1.3;
+      margin-bottom: 0.35rem;
+    }
+    .kanban-card-project {
+      font-size: 0.72rem;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .kanban-card-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      border-top: 1px dashed #f1f5f9;
+      padding-top: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .kanban-move-btns {
+      display: flex;
+      gap: 4px;
+    }
+    .kanban-move-btn {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 4px;
+      width: 24px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      cursor: pointer;
+      color: #475569;
+    }
+    .kanban-move-btn:hover {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    /* Project Cards */
+    .project-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      transition: all 0.15s ease;
+    }
+    .project-card:hover {
+      border-color: var(--primary-light);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    }
+    .project-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .project-color-marker {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .project-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 0.25rem 0;
+    }
+    .project-client {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .project-desc {
+      font-size: 0.82rem;
+      color: #475569;
+      line-height: 1.45;
+      margin-bottom: 1rem;
+      flex: 1;
+    }
+    .progress-bar-custom {
+      height: 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+      margin: 0.5rem 0 0.25rem;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .data-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .data-table td {
+      padding: 0.75rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      color: #1e293b;
+      vertical-align: middle;
+    }
+    .data-table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    /* Buttons */
+    .btn-pms {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 7px;
+      padding: 0.5rem 0.95rem;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+    .btn-pms:hover {
+      background: var(--primary-dark);
+      color: #ffffff;
+    }
+    .btn-pms-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: #334155;
+      border-radius: 7px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-pms-outline:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 75px;
+      right: 1.25rem;
+      z-index: 1080;
+    }
+    @media (min-width: 992px) {
+      .toast-container { bottom: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Announcement Banner -->
+  <div class="hub-banner">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-white text-dark py-1 px-2 fw-bold" style="font-size: 0.68rem;">LIVE DEMO</span>
+      <span>EduRiser Project Management System â€” Portfolio Ecosystem</span>
+    </div>
+    <a href="https://swapnil0607.github.io/control-center-hub/" title="Return to Control Center">
+      <span>Control Center Hub</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+
+  <!-- Main Top Bar -->
+  <header class="pms-topbar">
+    <div class="container-fluid d-flex align-items-center justify-content-between p-0">
+      <div class="d-flex align-items-center gap-3">
+        <a href="#dashboard" class="brand-wrap" onclick="switchView('dashboard')">
+          <div class="brand-icon">E</div>
+          <div>
+            <div class="brand-title">EduRiser PMS</div>
+            <div class="brand-subtitle">Delivery &amp; Work Management</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 gap-md-3">
+        <!-- Interactive Role Switcher -->
+        <div class="role-switcher-wrap" title="Switch active simulated user">
+          <span class="text-muted d-none d-sm-inline" style="font-size: 0.72rem; font-weight: 600;">ACT AS:</span>
+          <select id="roleSelector" class="role-select" onchange="handleRoleChange(this.value)">
+            <option value="swapnil">Swapnil Gaonkar (Admin &amp; Design Lead)</option>
+            <option value="sarah">Sarah Jenkins (Senior Project Manager)</option>
+            <option value="elena">Elena Vance (Lead UI/UX Designer)</option>
+            <option value="marcus">Marcus Chen (Staff Frontend Engineer)</option>
+          </select>
+        </div>
+
+        <button class="btn btn-sm btn-pms d-none d-sm-inline-flex" onclick="openNewProjectModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Project
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+    <!-- Desktop Sidebar -->
+    <aside class="app-sidebar">
+      <div class="nav-section-label">Workspace</div>
+      <button class="nav-btn active" id="nav-dashboard" onclick="switchView('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-btn" id="nav-projects" onclick="switchView('projects')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        Projects
+      </button>
+      <button class="nav-btn" id="nav-kanban" onclick="switchView('kanban')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+        Kanban Board
+      </button>
+      <button class="nav-btn" id="nav-worklogs" onclick="switchView('worklogs')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Work Logs &amp; Hours
+      </button>
+      <button class="nav-btn" id="nav-clients" onclick="switchView('clients')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clients &amp; Accounts
+      </button>
+
+      <div class="nav-section-label">Ecosystem Central</div>
+      <a href="https://swapnil0607.github.io/control-center-hub/" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        Control Center Hub
+      </a>
+      <a href="https://swapnil0607.github.io/hrms-portal/" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        HRMS Portal
+      </a>
+      <a href="https://swapnil0607.github.io/clientele-system/" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Clientele System
+      </a>
+      <a href="https://swapnil0607.github.io/portfolio-2026/" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Portfolio 2026
+      </a>
+    </aside>
+
+    <!-- Content Area -->
+    <main class="app-content">
+
+      <!-- ==================== VIEW 1: DASHBOARD ==================== -->
+      <div id="view-dashboard">
+        <!-- Top Stats Row -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-lg-3">
+            <div class="stat-card">
+              <div class="stat-label">Active Projects <span>ðŸ“</span></div>
+              <div class="stat-val" id="stat-active-projects">4</div>
+              <div class="stat-sub text-success">âœ“ 100% On-Track delivery</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card">
+              <div class="stat-label">Open Tasks <span>âš¡</span></div>
+              <div class="stat-val" id="stat-open-tasks">10</div>
+              <div class="stat-sub text-muted">Across 4 active sprints</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card">
+              <div class="stat-label">Logged Hours <span>â±ï¸</span></div>
+              <div class="stat-val" id="stat-total-hours">670h</div>
+              <div class="stat-sub text-primary">87.5% Billable quota</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card">
+              <div class="stat-label">Active Team <span>ðŸ‘¥</span></div>
+              <div class="stat-val">5</div>
+              <div class="stat-sub text-muted">Design &amp; Engineering</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Main Grid -->
+        <div class="row g-4">
+          <!-- Left Column: My Work -->
+          <div class="col-12 col-lg-8">
+            <div class="panel-box">
+              <div class="panel-header">
+                <div>
+                  <h3 class="panel-title">My Assigned Work</h3>
+                  <p class="panel-desc" id="my-work-sub">Work items assigned to Swapnil Gaonkar</p>
+                </div>
+                <button class="btn btn-sm btn-pms-outline" onclick="switchView('kanban')">Open Kanban &rarr;</button>
+              </div>
+
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Task Title</th>
+                      <th>Project</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="my-work-tbody">
+                    <!-- Populated dynamically based on user role -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Quick Add Daily Log Panel -->
+            <div class="panel-box">
+              <div class="panel-header">
+                <div>
+                  <h3 class="panel-title">Add Daily Log</h3>
+                  <p class="panel-desc">Record sprint activities and billable hours.</p>
+                </div>
+              </div>
+              <form id="quickLogForm" onsubmit="handleQuickLog(event)">
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold">Project Group</label>
+                    <select class="form-select form-select-sm" id="logProject" required>
+                      <option value="Enterprise Learning Platform 3.0">Enterprise Learning Platform 3.0</option>
+                      <option value="Global Rebrand & Unified Design System">Global Rebrand &amp; Unified Design System</option>
+                      <option value="Interactive Technical Training Academy">Interactive Technical Training Academy</option>
+                      <option value="Clinical Compliance Simulation Hub">Clinical Compliance Simulation Hub</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold">Phase</label>
+                    <select class="form-select form-select-sm" id="logPhase">
+                      <option value="Frontend Development">Frontend Development</option>
+                      <option value="High-Fidelity UI">High-Fidelity UI</option>
+                      <option value="Token System">Token System</option>
+                      <option value="QA & Testing">QA &amp; Testing</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold">Hours</label>
+                    <input type="number" class="form-control form-control-sm" id="logHours" step="0.5" min="0.5" max="16" value="4.0" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-semibold">Activity Notes</label>
+                    <input type="text" class="form-control form-control-sm" id="logNotes" placeholder="e.g. Refined mobile bottom dock navigation and iOS notch padding" required>
+                  </div>
+                  <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-sm btn-pms">Save Work Log</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right Column: Projects Health & Deliverables -->
+          <div class="col-12 col-lg-4">
+            <div class="panel-box">
+              <div class="panel-header">
+                <div>
+                  <h3 class="panel-title">Project Delivery</h3>
+                  <p class="panel-desc">Sprint completion status</p>
+                </div>
+              </div>
+
+              <div class="d-flex flex-column gap-3" id="project-health-list">
+                <!-- Dynamically filled -->
+              </div>
+            </div>
+
+            <!-- Quick Info Box -->
+            <div class="panel-box" style="background: #f0fdfa; border-color: #ccfbf1;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f766e; margin-bottom: 0.5rem;">ðŸ’¡ Recruiter Note</h4>
+              <p style="font-size: 0.8rem; color: #115e59; line-height: 1.45; margin: 0;">
+                This PMS demo simulates EduRiser's enterprise project management environment. Switch roles above to inspect permission scopes, move Kanban cards, and submit live work logs!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== VIEW 2: PROJECTS ==================== -->
+      <div id="view-projects" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+          <div>
+            <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0;">Active Projects</h2>
+            <p class="text-muted small mb-0">High-priority enterprise software deliverables and learning platforms.</p>
+          </div>
+          <button class="btn btn-sm btn-pms" onclick="openNewProjectModal()">+ Add Project</button>
+        </div>
+
+        <div class="row g-3" id="projects-container">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- ==================== VIEW 3: KANBAN BOARD ==================== -->
+      <div id="view-kanban" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+          <div>
+            <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0;">Interactive Kanban Board</h2>
+            <p class="text-muted small mb-0">Click the arrows on any card to move tasks across delivery stages in real-time.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <select class="form-select form-select-sm" id="kanbanFilterProject" onchange="renderKanban()">
+              <option value="all">All Projects</option>
+              <option value="PRJ-AETH-01">Enterprise Learning Platform 3.0</option>
+              <option value="PRJ-NOVA-02">Global Rebrand &amp; Unified Design System</option>
+              <option value="PRJ-APEX-03">Interactive Technical Training Academy</option>
+              <option value="PRJ-LUMI-04">Clinical Compliance Simulation Hub</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="kanban-grid">
+          <!-- Column 1: Planned / Backlog -->
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4 class="kanban-col-title">
+                <span style="color: #64748b;">ðŸ“‹</span> Backlog
+              </h4>
+              <span class="kanban-col-count" id="count-backlog">0</span>
+            </div>
+            <div class="kanban-cards-stack" id="col-backlog"></div>
+          </div>
+
+          <!-- Column 2: In Progress -->
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4 class="kanban-col-title">
+                <span style="color: #0284c7;">âš¡</span> In Progress
+              </h4>
+              <span class="kanban-col-count" id="count-in_progress">0</span>
+            </div>
+            <div class="kanban-cards-stack" id="col-in_progress"></div>
+          </div>
+
+          <!-- Column 3: Under Review -->
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4 class="kanban-col-title">
+                <span style="color: #d97706;">ðŸ”</span> Under Review
+              </h4>
+              <span class="kanban-col-count" id="count-under_review">0</span>
+            </div>
+            <div class="kanban-cards-stack" id="col-under_review"></div>
+          </div>
+
+          <!-- Column 4: Completed -->
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4 class="kanban-col-title">
+                <span style="color: #16a34a;">âœ…</span> Completed
+              </h4>
+              <span class="kanban-col-count" id="count-completed">0</span>
+            </div>
+            <div class="kanban-cards-stack" id="col-completed"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== VIEW 4: WORK LOGS ==================== -->
+      <div id="view-worklogs" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+          <div>
+            <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0;">Timesheet &amp; Daily Logs</h2>
+            <p class="text-muted small mb-0">Audited activity records, billing types, and individual contributions.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <span class="badge bg-success py-2 px-3 fw-bold" id="totalBillableBadge">Billable Hours: 28.0h</span>
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Member</th>
+                  <th>Project Group</th>
+                  <th>Phase / Module</th>
+                  <th>Activity Notes</th>
+                  <th>Hours</th>
+                  <th>Billing</th>
+                </tr>
+              </thead>
+              <tbody id="worklogs-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== VIEW 5: CLIENTS ==================== -->
+      <div id="view-clients" style="display: none;">
+        <div class="mb-3">
+          <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0;">Enterprise Clients</h2>
+          <p class="text-muted small mb-0">Active partner accounts, contracts, and stakeholder contacts.</p>
+        </div>
+
+        <div class="row g-3" id="clients-container">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Tab Navigation -->
+  <nav class="mobile-bottom-nav">
+    <button class="mobile-tab-btn active" id="m-nav-dashboard" onclick="switchView('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="mobile-tab-btn" id="m-nav-projects" onclick="switchView('projects')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span>Projects</span>
+    </button>
+    <button class="mobile-tab-btn" id="m-nav-kanban" onclick="switchView('kanban')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+      <span>Kanban</span>
+    </button>
+    <button class="mobile-tab-btn" id="m-nav-worklogs" onclick="switchView('worklogs')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Logs</span>
+    </button>
+    <button class="mobile-tab-btn" id="m-nav-clients" onclick="switchView('clients')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <span>Clients</span>
+    </button>
+  </nav>
+
+  <!-- Create Project Modal -->
+  <div class="modal fade" id="newProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold" style="font-size: 1.05rem;">Create New Project</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form onsubmit="handleCreateProject(event)">
+          <div class="modal-body p-3">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Project Name</label>
+              <input type="text" class="form-control form-control-sm" id="newProjName" placeholder="e.g. NextGen Micro-Learning Portal" required>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Project Code</label>
+                <input type="text" class="form-control form-control-sm" id="newProjCode" placeholder="PRJ-DEMO-05" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Client</label>
+                <select class="form-select form-select-sm" id="newProjClient">
+                  <option value="Aetheria Global Systems">Aetheria Global Systems</option>
+                  <option value="NovaTech Cloud Solutions">NovaTech Cloud Solutions</option>
+                  <option value="Apex Mobility & Motors">Apex Mobility &amp; Motors</option>
+                  <option value="Lumina Healthcare Group">Lumina Healthcare Group</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Priority</label>
+                <select class="form-select form-select-sm" id="newProjPriority">
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Estimated Build Hours</label>
+                <input type="number" class="form-control form-control-sm" id="newProjHours" value="120">
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Description</label>
+              <textarea class="form-control form-control-sm" id="newProjDesc" rows="2" placeholder="Brief project summary & scope..." required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-top p-2">
+            <button type="button" class="btn btn-sm btn-pms-outline" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-pms">Create Project</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // System Data State
+    const appState = {
+      currentUser: 'swapnil',
+      users: {
+        swapnil: { name: 'Swapnil Gaonkar', role: 'Admin & Principal Design Lead', initial: 'SG' },
+        sarah: { name: 'Sarah Jenkins', role: 'Senior Project Manager', initial: 'SJ' },
+        elena: { name: 'Elena Vance', role: 'Lead UI/UX Designer', initial: 'EV' },
+        marcus: { name: 'Marcus Chen', role: 'Staff Frontend Engineer', initial: 'MC' }
+      },
+      projects: [
+        {
+          id: 1,
+          code: 'PRJ-AETH-01',
+          name: 'Enterprise Learning Platform 3.0',
+          client: 'Aetheria Global Systems',
+          group: 'Web Platforms',
+          color: '#0284c7',
+          description: 'Complete UX redesign, course discovery dashboard, and responsive learner portal.',
+          progress: 78,
+          priority: 'high',
+          status: 'active',
+          buildHours: 240,
+          due: '2026-09-30'
+        },
+        {
+          id: 2,
+          code: 'PRJ-NOVA-02',
+          name: 'Global Rebrand & Unified Design System',
+          client: 'NovaTech Cloud Solutions',
+          group: 'Design Systems',
+          color: '#8b5cf6',
+          description: 'Comprehensive tokenized design system in Figma and production HTML/CSS/JS components.',
+          progress: 85,
+          priority: 'critical',
+          status: 'active',
+          buildHours: 180,
+          due: '2026-08-31'
+        },
+        {
+          id: 3,
+          code: 'PRJ-APEX-03',
+          name: 'Interactive Technical Training Academy',
+          client: 'Apex Mobility & Motors',
+          group: 'Interactive Portals',
+          color: '#10b981',
+          description: 'Interactive animated modules, 3D simulations, and gamified technician certifications.',
+          progress: 52,
+          priority: 'medium',
+          status: 'active',
+          buildHours: 160,
+          due: '2026-10-15'
+        },
+        {
+          id: 4,
+          code: 'PRJ-LUMI-04',
+          name: 'Clinical Compliance Simulation Hub',
+          client: 'Lumina Healthcare Group',
+          group: 'Healthcare Portals',
+          color: '#f59e0b',
+          description: 'Healthcare regulatory and emergency protocol scenario simulations with telemetry.',
+          progress: 15,
+          priority: 'medium',
+          status: 'planned',
+          buildHours: 90,
+          due: '2026-12-20'
+        }
+      ],
+      tasks: [
+        {
+          id: 1,
+          code: 'PRJ-AETH-01',
+          project: 'Enterprise Learning Platform 3.0',
+          title: 'Build responsive floating pill navigation header',
+          status: 'completed',
+          priority: 'high',
+          assignee: 'swapnil',
+          due: '2026-08-15'
+        },
+        {
+          id: 2,
+          code: 'PRJ-AETH-01',
+          project: 'Enterprise Learning Platform 3.0',
+          title: 'Optimize responsive image loading & WebP compression',
+          status: 'completed',
+          priority: 'critical',
+          assignee: 'marcus',
+          due: '2026-08-20'
+        },
+        {
+          id: 3,
+          code: 'PRJ-AETH-01',
+          project: 'Enterprise Learning Platform 3.0',
+          title: 'Develop interactive learning progress circular widgets',
+          status: 'completed',
+          priority: 'medium',
+          assignee: 'marcus',
+          due: '2026-08-25'
+        },
+        {
+          id: 4,
+          code: 'PRJ-AETH-01',
+          project: 'Enterprise Learning Platform 3.0',
+          title: 'Design high-fidelity dashboard dark mode themes',
+          status: 'under_review',
+          priority: 'high',
+          assignee: 'elena',
+          due: '2026-09-10'
+        },
+        {
+          id: 5,
+          code: 'PRJ-AETH-01',
+          project: 'Enterprise Learning Platform 3.0',
+          title: 'Accessibility audit and keyboard tab navigation',
+          status: 'in_progress',
+          priority: 'medium',
+          assignee: 'marcus',
+          due: '2026-09-18'
+        },
+        {
+          id: 6,
+          code: 'PRJ-NOVA-02',
+          project: 'Global Rebrand & Unified Design System',
+          title: 'Tokenize Apple typography scale across all viewports',
+          status: 'completed',
+          priority: 'high',
+          assignee: 'swapnil',
+          due: '2026-08-28'
+        },
+        {
+          id: 7,
+          code: 'PRJ-NOVA-02',
+          project: 'Global Rebrand & Unified Design System',
+          title: 'Implement Figma variable token export pipeline',
+          status: 'in_progress',
+          priority: 'high',
+          assignee: 'elena',
+          due: '2026-09-15'
+        },
+        {
+          id: 8,
+          code: 'PRJ-APEX-03',
+          project: 'Interactive Technical Training Academy',
+          title: 'Build interactive 3D simulation canvas controls',
+          status: 'in_progress',
+          priority: 'critical',
+          assignee: 'marcus',
+          due: '2026-09-22'
+        },
+        {
+          id: 9,
+          code: 'PRJ-APEX-03',
+          project: 'Interactive Technical Training Academy',
+          title: 'Design technician gamification achievement badges',
+          status: 'under_review',
+          priority: 'medium',
+          assignee: 'elena',
+          due: '2026-09-25'
+        },
+        {
+          id: 10,
+          code: 'PRJ-LUMI-04',
+          project: 'Clinical Compliance Simulation Hub',
+          title: 'Draft regulatory compliance scenario workflow logic',
+          status: 'backlog',
+          priority: 'high',
+          assignee: 'sarah',
+          due: '2026-10-05'
+        },
+        {
+          id: 11,
+          code: 'PRJ-LUMI-04',
+          project: 'Clinical Compliance Simulation Hub',
+          title: 'Setup multi-tenant authentication and permission masks',
+          status: 'backlog',
+          priority: 'medium',
+          assignee: 'swapnil',
+          due: '2026-10-12'
+        }
+      ],
+      workLogs: [
+        {
+          date: '2026-09-04',
+          user: 'Swapnil Gaonkar',
+          project: 'Enterprise Learning Platform 3.0',
+          phase: 'High-Fidelity UI',
+          notes: 'Fine-tuned bottom dock safe-area for mobile safari and verified touch response.',
+          hours: 4.5,
+          billing: 'Billable'
+        },
+        {
+          date: '2026-09-03',
+          user: 'Marcus Chen',
+          project: 'Interactive Technical Training Academy',
+          phase: 'Simulation Canvas',
+          notes: 'Configured WebGL context loss recovery and responsive canvas scaling.',
+          hours: 6.0,
+          billing: 'Billable'
+        },
+        {
+          date: '2026-09-02',
+          user: 'Elena Vance',
+          project: 'Global Rebrand & Unified Design System',
+          phase: 'Token Pipeline',
+          notes: 'Exported Figma spacing tokens and built automated CSS custom variable mapping.',
+          hours: 5.5,
+          billing: 'Billable'
+        },
+        {
+          date: '2026-09-01',
+          user: 'Sarah Jenkins',
+          project: 'Clinical Compliance Simulation Hub',
+          phase: 'Architecture',
+          notes: 'Sprint planning and milestone breakdown with medical compliance stakeholders.',
+          hours: 4.0,
+          billing: 'Non-Billable'
+        },
+        {
+          date: '2026-08-30',
+          user: 'Swapnil Gaonkar',
+          project: 'Global Rebrand & Unified Design System',
+          phase: 'Typography Tokens',
+          notes: 'Established modular clamp typography hierarchy and tested cross-device rendering.',
+          hours: 5.0,
+          billing: 'Billable'
+        },
+        {
+          date: '2026-08-28',
+          user: 'Marcus Chen',
+          project: 'Enterprise Learning Platform 3.0',
+          phase: 'Performance',
+          notes: 'Batch compressed 36MB of screenshots with bicubic downscaling for 60fps scrolling.',
+          hours: 7.0,
+          billing: 'Billable'
+        }
+      ],
+      clients: [
+        {
+          name: 'Aetheria Global Systems',
+          contact: 'Dr. Evelyn Ward, Head of Learning Tech',
+          projects: 1,
+          status: 'Active Tier-1 Partner',
+          notes: 'Enterprise contract covering multi-year digital learning portals and telemetry.'
+        },
+        {
+          name: 'NovaTech Cloud Solutions',
+          contact: 'Liam Oâ€™Connor, VP Engineering',
+          projects: 1,
+          status: 'Active Client',
+          notes: 'Global rebrand and enterprise design system token integration across 14 web products.'
+        },
+        {
+          name: 'Apex Mobility & Motors',
+          contact: 'Hans Becker, Director of Training',
+          projects: 1,
+          status: 'Active Client',
+          notes: 'Automotive interactive technician certification and 3D simulation learning.'
+        },
+        {
+          name: 'Lumina Healthcare Group',
+          contact: 'Rachel Chen, Chief Medical Compliance',
+          projects: 1,
+          status: 'Planning / Kickoff',
+          notes: 'Regulatory emergency scenarios and clinical compliance simulation suite.'
+        }
+      ]
+    };
+
+    // Navigation & View Switching
+    function switchView(viewName) {
+      const views = ['dashboard', 'projects', 'kanban', 'worklogs', 'clients'];
+      views.forEach(v => {
+        const el = document.getElementById('view-' + v);
+        if (el) el.style.display = (v === viewName) ? 'block' : 'none';
+
+        // Desktop nav button active state
+        const dBtn = document.getElementById('nav-' + v);
+        if (dBtn) dBtn.classList.toggle('active', v === viewName);
+
+        // Mobile nav button active state
+        const mBtn = document.getElementById('m-nav-' + v);
+        if (mBtn) mBtn.classList.toggle('active', v === viewName);
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Refresh corresponding view
+      if (viewName === 'kanban') renderKanban();
+      if (viewName === 'projects') renderProjects();
+      if (viewName === 'worklogs') renderWorkLogs();
+      if (viewName === 'clients') renderClients();
+      if (viewName === 'dashboard') renderDashboard();
+    }
+
+    // Role Switching
+    function handleRoleChange(newRole) {
+      appState.currentUser = newRole;
+      const user = appState.users[newRole];
+      showToast('Switched view to ' + user.name + ' (' + user.role + ')');
+      renderDashboard();
+      renderKanban();
+    }
+
+    // Render Dashboard
+    function renderDashboard() {
+      const userKey = appState.currentUser;
+      const user = appState.users[userKey];
+
+      // Update subtitle
+      const subEl = document.getElementById('my-work-sub');
+      if (subEl) subEl.textContent = 'Work items assigned to ' + user.name + ' (' + user.role + ')';
+
+      // Filter tasks assigned to current user
+      const myTasks = appState.tasks.filter(t => t.assignee === userKey);
+      const tbody = document.getElementById('my-work-tbody');
+      if (tbody) {
+        if (myTasks.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No active tasks assigned to ' + user.name + '. Click Kanban to assign work.</td></tr>';
+        } else {
+          tbody.innerHTML = myTasks.map(t => {
+            const badgeClass = t.status === 'completed' ? 'bg-success' : (t.status === 'in_progress' ? 'bg-primary' : 'bg-warning');
+            return '<tr>' +
+              '<td><strong style="color: #0f172a;">' + t.title + '</strong></td>' +
+              '<td><span class="small text-muted">' + t.project + '</span></td>' +
+              '<td><span class="priority-badge priority-' + t.priority + '">' + t.priority + '</span></td>' +
+              '<td><span class="badge ' + badgeClass + '">' + t.status.replace('_', ' ') + '</span></td>' +
+              '<td><button class="btn btn-sm btn-pms-outline py-0 px-2" style="font-size: 0.72rem;" onclick="switchView(\'kanban\')">View</button></td>' +
+            '</tr>';
+          }).join('');
+        }
+      }
+
+      // Update project health list
+      const healthList = document.getElementById('project-health-list');
+      if (healthList) {
+        healthList.innerHTML = appState.projects.map(p => {
+          return '<div>' +
+            '<div class="d-flex align-items-center justify-content-between mb-1">' +
+              '<span class="small fw-semibold text-truncate" style="max-width: 200px;">' +
+                '<span class="project-color-marker" style="background: ' + p.color + ';"></span>' + p.name +
+              '</span>' +
+              '<span class="small fw-bold text-muted">' + p.progress + '%</span>' +
+            '</div>' +
+            '<div class="progress-bar-custom">' +
+              '<div class="progress-fill" style="width: ' + p.progress + '%; background: ' + p.color + ';"></div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      // Update stats counters
+      const activeProjectsCount = appState.projects.filter(p => p.status === 'active').length;
+      const openTasksCount = appState.tasks.filter(t => t.status !== 'completed').length;
+      document.getElementById('stat-active-projects').textContent = activeProjectsCount;
+      document.getElementById('stat-open-tasks').textContent = openTasksCount;
+    }
+
+    // Render Projects
+    function renderProjects() {
+      const container = document.getElementById('projects-container');
+      if (!container) return;
+
+      container.innerHTML = appState.projects.map(p => {
+        return '<div class="col-12 col-md-6 col-lg-6">' +
+          '<div class="project-card">' +
+            '<div class="project-card-header">' +
+              '<div>' +
+                '<span class="badge bg-light text-secondary mb-2" style="font-size: 0.7rem; font-family: monospace;">' + p.code + '</span>' +
+                '<h3 class="project-title">' +
+                  '<span class="project-color-marker" style="background: ' + p.color + ';"></span>' + p.name +
+                '</h3>' +
+                '<div class="project-client">' + p.client + ' &bull; <span class="text-primary fw-semibold">' + p.group + '</span></div>' +
+              '</div>' +
+              '<span class="priority-badge priority-' + p.priority + '">' + p.priority + '</span>' +
+            '</div>' +
+            '<p class="project-desc">' + p.description + '</p>' +
+            '<div>' +
+              '<div class="d-flex justify-content-between small text-muted mb-1">' +
+                '<span>Progress</span>' +
+                '<span class="fw-bold">' + p.progress + '%</span>' +
+              '</div>' +
+              '<div class="progress-bar-custom">' +
+                '<div class="progress-fill" style="width: ' + p.progress + '%; background: ' + p.color + ';"></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="d-flex justify-content-between align-items-center pt-3 mt-3 border-top small text-muted">' +
+              '<span>Build: <strong>' + p.buildHours + 'h</strong></span>' +
+              '<span>Target: <strong>' + p.due + '</strong></span>' +
+              '<button class="btn btn-sm btn-pms-outline py-0 px-2" style="font-size: 0.75rem;" onclick="filterKanbanByProject(\'' + p.code + '\')">Tasks &rarr;</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // Render Kanban
+    function renderKanban() {
+      const filterProj = document.getElementById('kanbanFilterProject').value;
+      const filteredTasks = filterProj === 'all' ? appState.tasks : appState.tasks.filter(t => t.code === filterProj);
+
+      const columns = ['backlog', 'in_progress', 'under_review', 'completed'];
+      columns.forEach(col => {
+        const colTasks = filteredTasks.filter(t => t.status === col);
+        const colEl = document.getElementById('col-' + col);
+        const countEl = document.getElementById('count-' + col);
+
+        if (countEl) countEl.textContent = colTasks.length;
+        if (colEl) {
+          if (colTasks.length === 0) {
+            colEl.innerHTML = '<div class="p-3 text-center text-muted small" style="background: rgba(255,255,255,0.5); border-radius: 8px;">No tasks in this stage</div>';
+          } else {
+            colEl.innerHTML = colTasks.map(t => {
+              const assignee = appState.users[t.assignee] || { name: t.assignee, initial: '?' };
+              const leftBtn = col !== 'backlog' ? '<button class="kanban-move-btn" onclick="moveTask(' + t.id + ', -1)" title="Move backward">&larr;</button>' : '';
+              const rightBtn = col !== 'completed' ? '<button class="kanban-move-btn" onclick="moveTask(' + t.id + ', 1)" title="Move forward">&rarr;</button>' : '';
+
+              return '<div class="kanban-card">' +
+                '<div class="kanban-card-top">' +
+                  '<span class="priority-badge priority-' + t.priority + '">' + t.priority + '</span>' +
+                  '<span class="small text-muted" style="font-size: 0.7rem;">' + t.due + '</span>' +
+                '</div>' +
+                '<div class="kanban-card-title">' + t.title + '</div>' +
+                '<div class="kanban-card-project">' + t.project + '</div>' +
+                '<div class="kanban-card-foot">' +
+                  '<div class="d-flex align-items-center gap-1">' +
+                    '<span class="badge rounded-circle bg-secondary text-white py-1 px-1" style="font-size: 0.62rem; min-width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;">' + assignee.initial + '</span>' +
+                    '<span class="text-truncate" style="max-width: 100px;">' + assignee.name.split(' ')[0] + '</span>' +
+                  '</div>' +
+                  '<div class="kanban-move-btns">' +
+                    leftBtn + rightBtn +
+                  '</div>' +
+                '</div>' +
+              '</div>';
+            }).join('');
+          }
+        }
+      });
+    }
+
+    // Move Task across stages
+    function moveTask(taskId, direction) {
+      const stages = ['backlog', 'in_progress', 'under_review', 'completed'];
+      const task = appState.tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const currentIdx = stages.indexOf(task.status);
+      const newIdx = currentIdx + direction;
+      if (newIdx >= 0 && newIdx < stages.length) {
+        task.status = stages[newIdx];
+        renderKanban();
+        renderDashboard();
+        showToast('Moved "' + task.title.substring(0, 30) + '..." to ' + task.status.replace('_', ' '));
+      }
+    }
+
+    function filterKanbanByProject(code) {
+      document.getElementById('kanbanFilterProject').value = code;
+      switchView('kanban');
+    }
+
+    // Render Work Logs
+    function renderWorkLogs() {
+      const tbody = document.getElementById('worklogs-tbody');
+      if (!tbody) return;
+
+      let billableSum = 0;
+      tbody.innerHTML = appState.workLogs.map(l => {
+        if (l.billing === 'Billable') billableSum += l.hours;
+        const billingClass = l.billing === 'Billable' ? 'bg-success' : 'bg-secondary';
+        return '<tr>' +
+          '<td><span class="small font-monospace text-muted">' + l.date + '</span></td>' +
+          '<td><strong>' + l.user + '</strong></td>' +
+          '<td><span class="text-primary fw-semibold">' + l.project + '</span></td>' +
+          '<td><span class="small text-muted">' + l.phase + '</span></td>' +
+          '<td>' + l.notes + '</td>' +
+          '<td><strong>' + l.hours.toFixed(1) + 'h</strong></td>' +
+          '<td><span class="badge ' + billingClass + '">' + l.billing + '</span></td>' +
+        '</tr>';
+      }).join('');
+
+      const badge = document.getElementById('totalBillableBadge');
+      if (badge) badge.textContent = 'Billable Hours: ' + billableSum.toFixed(1) + 'h';
+    }
+
+    // Quick Work Log Submission
+    function handleQuickLog(e) {
+      e.preventDefault();
+      const proj = document.getElementById('logProject').value;
+      const phase = document.getElementById('logPhase').value;
+      const hours = parseFloat(document.getElementById('logHours').value) || 2.0;
+      const notes = document.getElementById('logNotes').value;
+      const user = appState.users[appState.currentUser];
+
+      const newLog = {
+        date: new Date().toISOString().split('T')[0],
+        user: user.name,
+        project: proj,
+        phase: phase,
+        notes: notes,
+        hours: hours,
+        billing: 'Billable'
+      };
+
+      appState.workLogs.unshift(newLog);
+      document.getElementById('logNotes').value = '';
+      showToast('Work log saved for ' + user.name + ' (+' + hours + 'h)');
+      renderWorkLogs();
+    }
+
+    // Render Clients
+    function renderClients() {
+      const container = document.getElementById('clients-container');
+      if (!container) return;
+
+      container.innerHTML = appState.clients.map(c => {
+        return '<div class="col-12 col-md-6">' +
+          '<div class="panel-box h-100">' +
+            '<div class="d-flex justify-content-between align-items-start mb-2">' +
+              '<h3 class="panel-title">' + c.name + '</h3>' +
+              '<span class="badge bg-success-subtle text-success border border-success-subtle">' + c.status + '</span>' +
+            '</div>' +
+            '<div class="small text-muted mb-2"><strong>Primary Contact:</strong> ' + c.contact + '</div>' +
+            '<p class="small text-secondary mb-3">' + c.notes + '</p>' +
+            '<div class="d-flex justify-content-between align-items-center pt-2 border-top small">' +
+              '<span class="text-muted">Active Engagements: <strong>' + c.projects + ' Project(s)</strong></span>' +
+              '<button class="btn btn-sm btn-pms-outline py-0 px-2" onclick="switchView(\'projects\')">View Contracts</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // Create New Project Modal Handlers
+    let projectModalInstance = null;
+    function openNewProjectModal() {
+      if (!projectModalInstance) {
+        projectModalInstance = new bootstrap.Modal(document.getElementById('newProjectModal'));
+      }
+      projectModalInstance.show();
+    }
+
+    function handleCreateProject(e) {
+      e.preventDefault();
+      const name = document.getElementById('newProjName').value;
+      const code = document.getElementById('newProjCode').value;
+      const client = document.getElementById('newProjClient').value;
+      const priority = document.getElementById('newProjPriority').value;
+      const hours = parseInt(document.getElementById('newProjHours').value) || 100;
+      const desc = document.getElementById('newProjDesc').value;
+
+      const colors = ['#0284c7', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+      const newProj = {
+        id: appState.projects.length + 1,
+        code: code,
+        name: name,
+        client: client,
+        group: 'Enterprise Systems',
+        color: randomColor,
+        description: desc,
+        progress: 5,
+        priority: priority,
+        status: 'active',
+        buildHours: hours,
+        due: '2026-11-30'
+      };
+
+      appState.projects.unshift(newProj);
+      if (projectModalInstance) projectModalInstance.hide();
+      e.target.reset();
+
+      showToast('Created new project: ' + name);
+      renderProjects();
+      renderDashboard();
+      switchView('projects');
+    }
+
+    // Toast Notification helper
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toastEl = document.createElement('div');
+      toastEl.className = 'toast align-items-center text-white bg-dark border-0 show shadow-lg';
+      toastEl.setAttribute('role', 'alert');
+      toastEl.style.fontSize = '0.82rem';
+      toastEl.innerHTML = '<div class="d-flex">' +
+        '<div class="toast-body py-2 px-3">âœ“ ' + message + '</div>' +
+        '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+      '</div>';
+      container.appendChild(toastEl);
+      setTimeout(() => {
+        toastEl.classList.remove('show');
+        setTimeout(() => toastEl.remove(), 250);
+      }, 3200);
+    }
+
+    // Initial setup on DOM loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      renderDashboard();
+      renderProjects();
+      renderKanban();
+      renderWorkLogs();
+      renderClients();
+    });
+  </script>
+</body>
+</html>
