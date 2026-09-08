@@ -7,8 +7,8 @@ return [
     'host' => 'localhost',
     'port' => '3306',
     'database' => $isLocal ? 'demo_pms' : 'eduriser_pms',
-    'username' => $isLocal ? 'root' : 'eduriser_pms_user',
-    'password' => $isLocal ? '' : 'Abcd@2020206',
+    'username' => $isLocal ? 'root' : (getenv('DB_USER') ?: 'root'),
+    'password' => $isLocal ? '' : (getenv('DB_PASS') ?: ''),
     'charset' => 'utf8mb4',
 ];
 
